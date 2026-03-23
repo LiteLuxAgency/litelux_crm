@@ -2,6 +2,19 @@ import { Telegraf } from "telegraf";
 import type { Repository } from "./repository.js";
 import type { ClientRow, ReminderKind, SettingsRow } from "./types.js";
 
+const TELEGRAM_TIME_ZONE = "Europe/Moscow";
+
+function formatTelegramDateTime(value: string): string {
+  return new Intl.DateTimeFormat("ru-RU", {
+    timeZone: TELEGRAM_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
 function formatClientCard(client: ClientRow): string {
   const parts = [
     `Клиент: ${client.name}`,
@@ -13,7 +26,7 @@ function formatClientCard(client: ClientRow): string {
   ];
 
   if (client.link) parts.push(`Ссылка: ${client.link}`);
-  if (client.callback_at) parts.push(`Перезвонить: ${new Date(client.callback_at).toLocaleString("ru-RU")}`);
+  if (client.callback_at) parts.push(`Перезвонить: ${formatTelegramDateTime(client.callback_at)}`);
   if (client.no_answer) parts.push("Статус: нет ответа");
   if (client.notes) parts.push(`Комментарий: ${client.notes}`);
 
