@@ -85,10 +85,7 @@ export class TelegramManager {
     this.activeChatId = chatId || null;
 
     if (this.bot && chatChanged) {
-      await this.bot.telegram.setMyCommands([
-        { command: "start", description: "Сохранить текущий чат для уведомлений" },
-        { command: "status", description: "Показать состояние бота" },
-      ]);
+      await this.bot.telegram.setMyCommands([]);
     }
   }
 
