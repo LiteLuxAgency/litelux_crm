@@ -48,7 +48,6 @@ export type SettingsInput = {
   telegramBotUsername?: string;
   telegramChatId?: string;
   telegramEnabled?: boolean;
-  remindersEnabled?: boolean;
 };
 
 export type ReminderKind = "callback_at" | "no_answer_24h";

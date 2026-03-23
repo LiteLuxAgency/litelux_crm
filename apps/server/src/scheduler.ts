@@ -32,7 +32,7 @@ export class ReminderScheduler {
 
     try {
       const settings = await this.repository.getSettings();
-      if (!settings.telegram_enabled || !settings.reminders_enabled) {
+      if (!settings.telegram_enabled) {
         return;
       }
 

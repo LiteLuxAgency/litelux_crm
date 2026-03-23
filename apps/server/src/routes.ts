@@ -21,7 +21,6 @@ const settingsSchema = z.object({
   telegramBotToken: z.string().trim().optional(),
   telegramChatId: z.string().trim().optional(),
   telegramEnabled: z.boolean().optional(),
-  remindersEnabled: z.boolean().optional(),
 });
 
 export function createRoutes(
@@ -43,7 +42,6 @@ export function createRoutes(
         telegramBotUsername: settings.telegram_bot_username,
         telegramChatId: settings.telegram_chat_id,
         telegramEnabled: settings.telegram_enabled,
-        remindersEnabled: settings.reminders_enabled,
         telegramBotTokenPresent: Boolean(settings.telegram_bot_token.trim()),
         createdAt: settings.created_at,
         updatedAt: settings.updated_at,
@@ -63,7 +61,6 @@ export function createRoutes(
         telegramBotUsername: settings.telegram_bot_username,
         telegramChatId: settings.telegram_chat_id,
         telegramEnabled: settings.telegram_enabled,
-        remindersEnabled: settings.reminders_enabled,
         telegramBotTokenPresent: Boolean(settings.telegram_bot_token.trim()),
         createdAt: settings.created_at,
         updatedAt: settings.updated_at,

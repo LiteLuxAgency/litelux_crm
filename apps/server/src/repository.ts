@@ -76,7 +76,6 @@ export class Repository {
     if (input.telegramBotUsername !== undefined) payload.telegram_bot_username = normalizeText(input.telegramBotUsername);
     if (input.telegramChatId !== undefined) payload.telegram_chat_id = normalizeText(input.telegramChatId);
     if (input.telegramEnabled !== undefined) payload.telegram_enabled = normalizeBoolean(input.telegramEnabled);
-    if (input.remindersEnabled !== undefined) payload.reminders_enabled = normalizeBoolean(input.remindersEnabled);
 
     const { data, error } = await this.client.from("crm_settings").upsert(payload).select("*").single();
     if (error) throw error;

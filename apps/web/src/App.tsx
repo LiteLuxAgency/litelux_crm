@@ -22,7 +22,6 @@ type Settings = {
   telegramBotUsername: string;
   telegramChatId: string;
   telegramEnabled: boolean;
-  remindersEnabled: boolean;
   telegramBotTokenPresent: boolean;
 };
 
@@ -42,7 +41,6 @@ type ClientFormState = {
 type SettingsFormState = {
   telegramBotToken: string;
   telegramEnabled: boolean;
-  remindersEnabled: boolean;
 };
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
@@ -63,7 +61,6 @@ const initialFormState: ClientFormState = {
 const initialSettingsState: SettingsFormState = {
   telegramBotToken: "",
   telegramEnabled: false,
-  remindersEnabled: true,
 };
 
 function formatDate(value: string | null) {
@@ -84,7 +81,6 @@ export default function App() {
     telegramBotUsername: "",
     telegramChatId: "",
     telegramEnabled: false,
-    remindersEnabled: true,
     telegramBotTokenPresent: false,
   });
   const [settingsForm, setSettingsForm] = useState<SettingsFormState>(initialSettingsState);
@@ -136,7 +132,6 @@ export default function App() {
       setSettingsForm({
         telegramBotToken: "",
         telegramEnabled: payload.telegramEnabled,
-        remindersEnabled: payload.remindersEnabled,
       });
     } catch {
       setSettings((current) => ({ ...current, telegramEnabled: false }));
@@ -159,7 +154,6 @@ export default function App() {
             ? { telegramBotToken: settingsForm.telegramBotToken.trim() }
             : {}),
           telegramEnabled: settingsForm.telegramEnabled,
-          remindersEnabled: settingsForm.remindersEnabled,
         }),
       });
 
@@ -278,20 +272,6 @@ export default function App() {
                 }
               />
               <span>Включить Telegram-бота</span>
-            </label>
-
-            <label className="toggle">
-              <input
-                type="checkbox"
-                checked={settingsForm.remindersEnabled}
-                onChange={(event) =>
-                  setSettingsForm((current) => ({
-                    ...current,
-                    remindersEnabled: event.target.checked,
-                  }))
-                }
-              />
-              <span>Включить напоминания</span>
             </label>
 
             <div className="status-card">
