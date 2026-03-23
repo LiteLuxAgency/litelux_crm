@@ -10,7 +10,8 @@
     "dev": "concurrently \"npm run dev --workspace @litelux/web\" \"npm run dev --workspace @litelux/crm-server\"",
     "dev:web": "npm run dev --workspace @litelux/web",
     "dev:server": "npm run dev --workspace @litelux/crm-server",
-    "build": "npm run build --workspace @litelux/web && npm run build --workspace @litelux/crm-server"
+    "build": "npm run build --workspace @litelux/web && npm run build --workspace @litelux/crm-server",
+    "start": "npm run start --workspace @litelux/crm-server"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
