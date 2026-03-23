@@ -46,7 +46,11 @@ async function main(): Promise<void> {
   });
 
   const settings = await repository.getSettings();
-  await telegramManager.sync(settings);
+  try {
+    await telegramManager.sync(settings);
+  } catch (error) {
+    console.error("Не удалось запустить Telegram-бота при старте:", error);
+  }
   scheduler.start();
 
   setInterval(() => {
