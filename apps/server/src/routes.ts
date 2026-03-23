@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { type NextFunction, type Request, type Response, Router } from "express";
 import { z } from "zod";
 import type { Repository } from "./repository.js";
 import type { ReminderScheduler } from "./scheduler.js";
@@ -109,14 +109,17 @@ export function createRoutes(
     }
   });
 
-  router.post("/api/reminders/run", async (_req, res, next) => {
+  async function runReminders(_req: Request, res: Response, next: NextFunction) {
     try {
       await scheduler.tick();
       res.json({ ok: true });
     } catch (error) {
       next(error);
     }
-  });
+  }
+
+  router.get("/api/reminders/run", runReminders);
+  router.post("/api/reminders/run", runReminders);
 
   return router;
 }

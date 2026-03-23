@@ -53,14 +53,13 @@ export class TelegramManager {
 
     if (!this.bot || tokenChanged) {
       await this.stop();
+      this.activeToken = token;
+      this.activeChatId = chatId || null;
       this.bot = new Telegraf(token);
       this.registerHandlers();
       try {
         await this.bot.launch({ dropPendingUpdates: true });
       } catch (error) {
-        this.bot = null;
-        this.activeToken = null;
-
         if (
           error &&
           typeof error === "object" &&
@@ -70,13 +69,15 @@ export class TelegramManager {
           "error_code" in error.response &&
           error.response.error_code === 401
         ) {
+          this.bot = null;
+          this.activeToken = null;
           throw new Error("Неверный токен Telegram-бота");
         }
 
-        throw error;
+        console.error("Не удалось запустить прием команд Telegram-бота, но отправка уведомлений останется доступной:", error);
+        this.bot = null;
       }
-      this.activeToken = token;
-      const username = this.bot.botInfo?.username ?? "";
+      const username = this.bot?.botInfo?.username ?? "";
       if (username && username !== nextSettings.telegram_bot_username) {
         await this.repository.updateSettings({ telegramBotUsername: username });
       }
@@ -105,9 +106,15 @@ export class TelegramManager {
   }
 
   async sendMessage(text: string): Promise<boolean> {
-    if (!this.bot || !this.activeChatId) return false;
+    if (!this.activeToken || !this.activeChatId) {
+      console.error("Не удалось отправить Telegram-уведомление: не задан токен бота или chat id");
+      return false;
+    }
+
+    const telegram = this.bot?.telegram ?? new Telegraf(this.activeToken).telegram;
+
     try {
-      await this.bot.telegram.sendMessage(this.activeChatId, text);
+      await telegram.sendMessage(this.activeChatId, text);
       return true;
     } catch (error) {
       console.error("Не удалось отправить Telegram-уведомление:", error);
