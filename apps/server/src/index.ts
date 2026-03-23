@@ -45,23 +45,31 @@ async function main(): Promise<void> {
     res.status(statusCode).json({ ok: false, error: message });
   });
 
-  const settings = await repository.getSettings();
-  try {
-    await telegramManager.sync(settings);
-  } catch (error) {
-    console.error("Не удалось запустить Telegram-бота при старте:", error);
-  }
-  scheduler.start();
-
-  setInterval(() => {
-    void telegramManager.sync().catch((error) => {
-      console.error("Не удалось синхронизировать Telegram-бота:", error);
-    });
-  }, config.SETTINGS_SYNC_INTERVAL_MS);
-
   app.listen(config.PORT, () => {
     console.log(`CRM backend запущен на порту ${config.PORT}`);
   });
+
+  void (async () => {
+    try {
+      const settings = await repository.getSettings();
+
+      try {
+        await telegramManager.sync(settings);
+      } catch (error) {
+        console.error("Не удалось запустить Telegram-бота при старте:", error);
+      }
+
+      scheduler.start();
+
+      setInterval(() => {
+        void telegramManager.sync().catch((error) => {
+          console.error("Не удалось синхронизировать Telegram-бота:", error);
+        });
+      }, config.SETTINGS_SYNC_INTERVAL_MS);
+    } catch (error) {
+      console.error("Не удалось завершить инициализацию после старта сервера:", error);
+    }
+  })();
 
   process.on("SIGINT", async () => {
     scheduler.stop();
