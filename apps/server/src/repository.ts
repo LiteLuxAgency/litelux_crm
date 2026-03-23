@@ -227,11 +227,8 @@ export class Repository {
     if (input.noAnswer !== undefined) {
       if (normalizeBoolean(input.noAnswer)) {
         payload.no_answer = true;
-        payload.no_answer_marked_at = current?.no_answer_marked_at ?? nowIso;
-        payload.no_answer_reminded_at = current?.no_answer_marked_at ? current.no_answer_reminded_at : null;
-        if (!current?.no_answer_marked_at) {
-          payload.no_answer_reminded_at = null;
-        }
+        payload.no_answer_marked_at = nowIso;
+        payload.no_answer_reminded_at = null;
       } else {
         payload.no_answer = false;
         payload.no_answer_marked_at = null;
