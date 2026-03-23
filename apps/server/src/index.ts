@@ -1,5 +1,8 @@
 import cors from "cors";
 import express from "express";
+import { existsSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { config } from "./config.js";
 import { Repository } from "./repository.js";
 import { ReminderScheduler } from "./scheduler.js";
@@ -7,6 +10,10 @@ import { createRoutes } from "./routes.js";
 import { TelegramManager } from "./telegram-manager.js";
 
 async function main(): Promise<void> {
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+  const webDistPath = path.resolve(__dirname, "../../web/dist");
+  const webIndexPath = path.join(webDistPath, "index.html");
   const repository = new Repository();
   const telegramManager = new TelegramManager(repository);
   const scheduler = new ReminderScheduler(repository, telegramManager, config.REMINDER_CHECK_INTERVAL_MS);
@@ -21,6 +28,15 @@ async function main(): Promise<void> {
   );
   app.use(express.json({ limit: "1mb" }));
   app.use(createRoutes(repository, telegramManager, scheduler));
+
+  if (existsSync(webIndexPath)) {
+    app.use(express.static(webDistPath));
+    app.get(/^(?!\/api(?:\/|$)|\/healthz$).*/, (_req, res) => {
+      res.sendFile(webIndexPath);
+    });
+  } else {
+    console.warn(`Фронтенд не найден по пути ${webIndexPath}`);
+  }
 
   app.use((error: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
     const message = error instanceof Error ? error.message : "Неизвестная ошибка сервера";
