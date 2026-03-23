@@ -74,9 +74,40 @@ function formatDate(value: string | null) {
   }).format(new Date(value));
 }
 
+function toDateTimeLocalValue(value: string | null) {
+  if (!value) {
+    return "";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  const offset = date.getTimezoneOffset();
+  const localDate = new Date(date.getTime() - offset * 60_000);
+  return localDate.toISOString().slice(0, 16);
+}
+
+function clientToFormState(client: Client): ClientFormState {
+  return {
+    name: client.name,
+    phone: client.phone,
+    commission: client.commission !== null ? String(client.commission) : "",
+    link: client.link ?? "",
+    isDuplicate: client.is_duplicate,
+    isExclusive: client.is_exclusive,
+    onlyClients: client.only_clients,
+    noAnswer: client.no_answer,
+    callbackAt: toDateTimeLocalValue(client.callback_at),
+    notes: client.notes ?? "",
+  };
+}
+
 export default function App() {
   const [screen, setScreen] = useState<Screen>("list");
   const [clients, setClients] = useState<Client[]>([]);
+  const [editingClientId, setEditingClientId] = useState<string | null>(null);
   const [settings, setSettings] = useState<Settings>({
     telegramBotUsername: "",
     telegramChatId: "",
@@ -199,22 +230,30 @@ export default function App() {
         payload.link = formState.link.trim();
       }
 
-      const response = await fetch(`${API_URL}/api/clients`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const isEditing = Boolean(editingClientId);
+      const response = await fetch(
+        isEditing ? `${API_URL}/api/clients/${editingClientId}` : `${API_URL}/api/clients`,
+        {
+          method: isEditing ? "PATCH" : "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
         },
-        body: JSON.stringify(payload),
-      });
+      );
 
       if (!response.ok) {
         const payload = (await response.json().catch(() => null)) as
           | { error?: string }
           | null;
-        throw new Error(payload?.error || "Не удалось сохранить клиента");
+        throw new Error(
+          payload?.error ||
+            (isEditing ? "Не удалось обновить клиента" : "Не удалось сохранить клиента"),
+        );
       }
 
       setFormState(initialFormState);
+      setEditingClientId(null);
       startTransition(() => {
         setScreen("list");
       });
@@ -224,6 +263,24 @@ export default function App() {
     } finally {
       setSaving(false);
     }
+  }
+
+  function openCreateForm() {
+    setEditingClientId(null);
+    setFormState(initialFormState);
+    setScreen("create");
+  }
+
+  function openEditForm(client: Client) {
+    setEditingClientId(client.id);
+    setFormState(clientToFormState(client));
+    setScreen("create");
+  }
+
+  function goToList() {
+    setScreen("list");
+    setEditingClientId(null);
+    setFormState(initialFormState);
   }
 
   function renderContent() {
@@ -317,12 +374,14 @@ export default function App() {
     }
 
     if (screen === "create") {
+      const isEditing = Boolean(editingClientId);
+
       return (
         <section className="sheet">
           <div className="sheet__header">
             <div>
-              <p className="eyebrow">Новый клиент</p>
-              <h2>Добавление собственника</h2>
+              <p className="eyebrow">{isEditing ? "Редактирование" : "Новый клиент"}</p>
+              <h2>{isEditing ? "Изменение клиента" : "Добавление собственника"}</h2>
             </div>
           </div>
 
@@ -461,7 +520,11 @@ export default function App() {
             </div>
 
             <button type="submit" className="primary-button" disabled={saving}>
-              {saving ? "Сохраняю..." : "Сохранить клиента"}
+              {saving
+                ? "Сохраняю..."
+                : isEditing
+                  ? "Сохранить изменения"
+                  : "Сохранить клиента"}
             </button>
           </form>
         </section>
@@ -483,6 +546,10 @@ export default function App() {
           `Start` у бота.
         </div>
 
+        <div className="hint-card hint-card--compact">
+          Нажмите на карточку клиента, чтобы открыть редактирование.
+        </div>
+
         {loading ? <div className="hint-card">Загрузка клиентов...</div> : null}
 
         {!loading && clients.length === 0 ? (
@@ -494,11 +561,17 @@ export default function App() {
 
         <div className="client-list">
           {clients.map((client) => (
-            <article className="client-card" key={client.id}>
+            <article
+              className="client-card client-card--interactive"
+              key={client.id}
+              onClick={() => openEditForm(client)}
+            >
               <div className="client-card__top">
                 <div>
                   <h3>{client.name}</h3>
-                  <a href={`tel:${client.phone}`}>{client.phone}</a>
+                  <a href={`tel:${client.phone}`} onClick={(event) => event.stopPropagation()}>
+                    {client.phone}
+                  </a>
                 </div>
                 <div className="commission-badge">
                   {client.commission !== null ? `${client.commission}%` : "Без %"}
@@ -521,7 +594,10 @@ export default function App() {
                   <button
                     type="button"
                     className="link-button"
-                    onClick={() => openExternalLink(client.link)}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      openExternalLink(client.link);
+                    }}
                   >
                     Открыть ссылку
                   </button>
@@ -564,7 +640,7 @@ export default function App() {
         <button
           type="button"
           className="fab"
-          onClick={() => setScreen("create")}
+          onClick={openCreateForm}
           aria-label="Добавить клиента"
         >
           +
@@ -573,7 +649,7 @@ export default function App() {
         <button
           type="button"
           className="fab fab--secondary"
-          onClick={() => setScreen("list")}
+          onClick={goToList}
           aria-label="Вернуться назад"
         >
           ←
