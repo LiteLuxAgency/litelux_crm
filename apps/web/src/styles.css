@@ -229,6 +229,14 @@ a {
   font-size: 1.15rem;
 }
 
+.client-card__number {
+  margin-bottom: 6px;
+  color: var(--accent);
+  font-size: 0.86rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 .client-card__top,
 .client-card__meta {
   display: flex;

@@ -5,6 +5,7 @@ type Screen = "list" | "create" | "settings";
 
 type Client = {
   id: string;
+  client_number: number;
   name: string;
   phone: string;
   commission: number | null;
@@ -381,7 +382,13 @@ export default function App() {
           <div className="sheet__header">
             <div>
               <p className="eyebrow">{isEditing ? "Редактирование" : "Новый клиент"}</p>
-              <h2>{isEditing ? "Изменение клиента" : "Добавление собственника"}</h2>
+              <h2>
+                {isEditing
+                  ? `Изменение клиента #${
+                      clients.find((client) => client.id === editingClientId)?.client_number ?? ""
+                    }`
+                  : "Добавление собственника"}
+              </h2>
             </div>
           </div>
 
@@ -568,6 +575,7 @@ export default function App() {
             >
               <div className="client-card__top">
                 <div>
+                  <div className="client-card__number">#{client.client_number}</div>
                   <h3>{client.name}</h3>
                   <a href={`tel:${client.phone}`} onClick={(event) => event.stopPropagation()}>
                     {client.phone}

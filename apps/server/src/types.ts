@@ -1,5 +1,6 @@
 export type ClientRow = {
   id: string;
+  client_number: number;
   name: string;
   phone: string;
   commission: number | null;

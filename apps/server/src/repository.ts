@@ -86,7 +86,7 @@ export class Repository {
     const { data, error } = await this.client
       .from("crm_clients")
       .select("*")
-      .order("created_at", { ascending: false });
+      .order("client_number", { ascending: false });
 
     if (error) throw error;
     return (data ?? []) as ClientRow[];
