@@ -9,6 +9,8 @@ import type {
   ReminderKind,
 } from "./types.js";
 
+const NO_ANSWER_TEST_DELAY_MS = 60_000;
+
 function normalizeText(value: unknown, fallback = ""): string {
   if (typeof value === "string") return value.trim();
   return fallback;
@@ -145,7 +147,7 @@ export class Repository {
         client.no_answer &&
         Number.isFinite(noAnswerMarkedAtMs) &&
         !client.no_answer_reminded_at &&
-        noAnswerMarkedAtMs <= now
+        noAnswerMarkedAtMs + NO_ANSWER_TEST_DELAY_MS <= now
       ) {
         reminders.push({ client, kind: "no_answer_24h" });
       }
