@@ -55,7 +55,26 @@ export class TelegramManager {
       await this.stop();
       this.bot = new Telegraf(token);
       this.registerHandlers();
-      await this.bot.launch({ dropPendingUpdates: true });
+      try {
+        await this.bot.launch({ dropPendingUpdates: true });
+      } catch (error) {
+        this.bot = null;
+        this.activeToken = null;
+
+        if (
+          error &&
+          typeof error === "object" &&
+          "response" in error &&
+          error.response &&
+          typeof error.response === "object" &&
+          "error_code" in error.response &&
+          error.response.error_code === 401
+        ) {
+          throw new Error("Неверный токен Telegram-бота");
+        }
+
+        throw error;
+      }
       this.activeToken = token;
       const username = this.bot.botInfo?.username ?? "";
       if (username && username !== nextSettings.telegram_bot_username) {
@@ -75,7 +94,14 @@ export class TelegramManager {
 
   async stop(): Promise<void> {
     if (this.bot) {
-      await this.bot.stop();
+      try {
+        await this.bot.stop();
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "";
+        if (!message.includes("Bot is not running")) {
+          throw error;
+        }
+      }
       this.bot = null;
     }
     this.activeToken = null;
