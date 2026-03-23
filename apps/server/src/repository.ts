@@ -179,6 +179,7 @@ export class Repository {
     current?: ClientRow,
   ): Record<string, unknown> {
     const nextName = input.name !== undefined ? normalizeText(input.name) : current?.name;
+    const nextAddress = input.address !== undefined ? normalizeText(input.address) : current?.address;
     const nextPhone = input.phone !== undefined ? normalizeText(input.phone) : current?.phone;
 
     if (requireAll) {
@@ -192,6 +193,8 @@ export class Repository {
     const payload: Record<string, unknown> = {};
 
     if (nextName !== undefined) payload.name = nextName;
+    if (nextAddress !== undefined) payload.address = nextAddress;
+    else if (requireAll) payload.address = "";
     if (nextPhone !== undefined) payload.phone = nextPhone;
     if (input.commission !== undefined) payload.commission = normalizeNumber(input.commission);
     else if (requireAll) payload.commission = normalizeNumber(undefined, 0);

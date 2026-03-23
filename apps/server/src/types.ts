@@ -1,6 +1,7 @@
 export type ClientRow = {
   id: string;
   client_number: number;
+  address: string;
   name: string;
   phone: string;
   commission: number | null;
@@ -31,6 +32,7 @@ export type SettingsRow = {
 
 export type ClientInput = {
   name: string;
+  address?: string;
   phone: string;
   commission?: number | null;
   isDuplicate?: boolean;

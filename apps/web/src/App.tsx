@@ -6,6 +6,7 @@ type Screen = "list" | "create" | "settings";
 type Client = {
   id: string;
   client_number: number;
+  address: string;
   name: string;
   phone: string;
   commission: number | null;
@@ -28,6 +29,7 @@ type Settings = {
 
 type ClientFormState = {
   name: string;
+  address: string;
   phone: string;
   commission: string;
   link: string;
@@ -48,6 +50,7 @@ const API_URL = import.meta.env.VITE_API_URL || window.location.origin;
 
 const initialFormState: ClientFormState = {
   name: "",
+  address: "",
   phone: "",
   commission: "",
   link: "",
@@ -93,6 +96,7 @@ function toDateTimeLocalValue(value: string | null) {
 function clientToFormState(client: Client): ClientFormState {
   return {
     name: client.name,
+    address: client.address ?? "",
     phone: client.phone,
     commission: client.commission !== null ? String(client.commission) : "",
     link: client.link ?? "",
@@ -214,6 +218,7 @@ export default function App() {
     try {
       const payload: Record<string, unknown> = {
         name: formState.name,
+        address: formState.address,
         phone: formState.phone,
         isDuplicate: formState.isDuplicate,
         isExclusive: formState.isExclusive,
@@ -406,6 +411,17 @@ export default function App() {
             </label>
 
             <label className="field">
+              <span className="field__label">Адрес</span>
+              <input
+                value={formState.address}
+                onChange={(event) =>
+                  setFormState((current) => ({ ...current, address: event.target.value }))
+                }
+                placeholder="Улица, дом, район"
+              />
+            </label>
+
+            <label className="field">
               <span className="field__label">Номер телефона</span>
               <input
                 required
@@ -548,13 +564,8 @@ export default function App() {
           <div className="pill">{clients.length}</div>
         </div>
 
-        <div className="hint-card">
-          Напоминания придут в Telegram после того, как вы включите бота в настройках и нажмёте
-          `Start` у бота.
-        </div>
-
         <div className="hint-card hint-card--compact">
-          Нажмите на карточку клиента, чтобы открыть редактирование.
+          Список клиентов. Нажмите на строку, чтобы открыть редактирование.
         </div>
 
         {loading ? <div className="hint-card">Загрузка клиентов...</div> : null}
@@ -566,52 +577,52 @@ export default function App() {
           </div>
         ) : null}
 
-        <div className="client-list">
+        <div className="list-head">
+          <span>ID</span>
+          <span>Адрес</span>
+          <span>Имя</span>
+        </div>
+
+        <div className="client-list client-list--table">
           {clients.map((client) => (
             <article
-              className="client-card client-card--interactive"
+              className="client-row"
               key={client.id}
               onClick={() => openEditForm(client)}
             >
-              <div className="client-card__top">
-                <div>
-                  <div className="client-card__number">#{client.client_number}</div>
-                  <h3>{client.name}</h3>
+              <div className="client-row__id">#{client.client_number}</div>
+              <div className="client-row__address">
+                <strong>{client.address || "Без адреса"}</strong>
+                <span>{client.callback_at ? formatDate(client.callback_at) : "Без перезвона"}</span>
+              </div>
+              <div className="client-row__person">
+                <strong>{client.name}</strong>
+                <div className="client-row__subline">
                   <a href={`tel:${client.phone}`} onClick={(event) => event.stopPropagation()}>
                     {client.phone}
                   </a>
+                  {client.link ? (
+                    <button
+                      type="button"
+                      className="link-button link-button--small"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        openExternalLink(client.link);
+                      }}
+                    >
+                      Ссылка
+                    </button>
+                  ) : null}
                 </div>
-                <div className="commission-badge">
-                  {client.commission !== null ? `${client.commission}%` : "Без %"}
+                <div className="client-row__tags">
+                  {client.is_duplicate ? <span className="badge">Дубль</span> : null}
+                  {client.is_exclusive ? <span className="badge">Эксклюзив</span> : null}
+                  {client.only_clients ? <span className="badge">Клиенты</span> : null}
+                  {client.no_answer ? <span className="badge">Нет ответа</span> : null}
+                  {client.commission !== null ? (
+                    <span className="badge badge--accent">{client.commission}%</span>
+                  ) : null}
                 </div>
-              </div>
-
-              <div className="badge-row">
-                {client.is_duplicate ? <span className="badge">Дубль</span> : null}
-                {client.is_exclusive ? <span className="badge">Эксклюзив</span> : null}
-                {client.only_clients ? <span className="badge">Только клиенты</span> : null}
-                {client.no_answer ? <span className="badge">Нет ответа</span> : null}
-              </div>
-
-              <div className="client-card__meta">
-                <div>
-                  <span>Перезвонить</span>
-                  <strong>{formatDate(client.callback_at)}</strong>
-                </div>
-                {client.link ? (
-                  <button
-                    type="button"
-                    className="link-button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      openExternalLink(client.link);
-                    }}
-                  >
-                    Открыть ссылку
-                  </button>
-                ) : (
-                  <span className="muted-text">Ссылки нет</span>
-                )}
               </div>
             </article>
           ))}

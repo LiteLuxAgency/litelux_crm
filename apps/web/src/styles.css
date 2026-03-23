@@ -204,6 +204,21 @@ a {
   gap: 14px;
 }
 
+.client-list--table {
+  gap: 10px;
+}
+
+.list-head {
+  display: grid;
+  grid-template-columns: 88px 1.4fr 1fr;
+  gap: 12px;
+  padding: 0 4px 10px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .client-card {
   padding: 16px;
   border-radius: 24px;
@@ -222,6 +237,87 @@ a {
 .client-card--interactive:hover {
   transform: translateY(-1px);
   border-color: rgba(255, 225, 191, 0.22);
+}
+
+.client-row {
+  display: grid;
+  grid-template-columns: 88px 1.4fr 1fr;
+  gap: 12px;
+  align-items: start;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.035);
+  cursor: pointer;
+  transition:
+    transform 0.16s ease,
+    border-color 0.16s ease,
+    background 0.16s ease;
+}
+
+.client-row:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255, 225, 191, 0.22);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.client-row__id,
+.client-row__address,
+.client-row__person {
+  min-width: 0;
+}
+
+.client-row__id {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 10px;
+  border-radius: 12px;
+  background: rgba(242, 173, 95, 0.12);
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+
+.client-row__address strong,
+.client-row__person strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.98rem;
+}
+
+.client-row__address span {
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.client-row__subline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.client-row__subline a {
+  color: var(--muted);
+}
+
+.client-row__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.badge--accent {
+  color: var(--accent-strong);
+}
+
+.link-button--small {
+  min-height: 32px;
+  padding: 0 10px;
+  border-radius: 10px;
+  font-size: 0.82rem;
 }
 
 .client-card h3 {
@@ -424,6 +520,11 @@ a {
   .client-card__meta {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .list-head,
+  .client-row {
+    grid-template-columns: 1fr;
   }
 
   .fab {

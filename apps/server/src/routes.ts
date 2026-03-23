@@ -6,6 +6,7 @@ import type { TelegramManager } from "./telegram-manager.js";
 
 const clientSchema = z.object({
   name: z.string().trim().min(1, "Укажите имя клиента"),
+  address: z.string().trim().optional(),
   phone: z.string().trim().min(1, "Укажите телефон"),
   commission: z.number().nonnegative().nullable().optional(),
   isDuplicate: z.boolean().optional(),
