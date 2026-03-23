@@ -224,7 +224,9 @@ export default function App() {
         isExclusive: formState.isExclusive,
         onlyClients: formState.onlyClients,
         noAnswer: formState.noAnswer,
-        callbackAt: formState.callbackAt || null,
+        callbackAt: formState.callbackAt
+          ? new Date(formState.callbackAt).toISOString()
+          : null,
         notes: formState.notes,
       };
 
