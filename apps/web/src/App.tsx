@@ -49,8 +49,8 @@ type SettingsFormState = {
   telegramEnabled: boolean;
 };
 
-type ClientPriorityTone = "normal" | "warning" | "danger";
-type ClientFilter = "inWork" | "duplicate" | "callback" | "noAnswer" | "onlyClients" | "archive";
+type ClientPriorityTone = "normal" | "success" | "warning" | "danger";
+type ClientFilter = "tasks" | "inWork" | "duplicate" | "callback" | "noAnswer" | "onlyClients" | "archive";
 type ClientDueKind = "callback" | "noAnswer";
 
 const API_URL = import.meta.env.VITE_API_URL || window.location.origin;
@@ -73,6 +73,113 @@ const initialSettingsState: SettingsFormState = {
   telegramBotToken: "",
   telegramEnabled: false,
 };
+
+function ArrowLeftIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M15 6L9 12L15 18"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function SettingsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M10.3 3.9H13.7L14.2 6.1C14.6 6.2 15 6.4 15.4 6.6L17.3 5.4L19.7 7.8L18.5 9.7C18.7 10.1 18.8 10.5 18.9 10.9L21.1 11.4V14.8L18.9 15.3C18.8 15.7 18.6 16.1 18.4 16.5L19.7 18.4L17.3 20.8L15.4 19.6C15 19.8 14.6 20 14.2 20.1L13.7 22.1H10.3L9.8 20.1C9.4 20 9 19.8 8.6 19.6L6.7 20.8L4.3 18.4L5.5 16.5C5.3 16.1 5.2 15.7 5.1 15.3L2.9 14.8V11.4L5.1 10.9C5.2 10.5 5.4 10.1 5.6 9.7L4.3 7.8L6.7 5.4L8.6 6.6C9 6.4 9.4 6.2 9.8 6.1L10.3 3.9Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.55"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle
+        cx="12"
+        cy="12"
+        r="3"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.55"
+      />
+    </svg>
+  );
+}
+
+function PhoneIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M6.9 4.8H9.4L10.6 8.7L9 10.2C10 12.2 11.6 13.8 13.8 15L15.3 13.4L19.2 14.6V17.1C19.2 18 18.5 18.8 17.6 18.8C10.7 18.4 5.6 13.3 5.2 6.4C5.2 5.5 6 4.8 6.9 4.8Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function ExternalLinkIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M14 5H19V10"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M11 13L19 5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M19 14V18C19 18.6 18.6 19 18 19H6C5.4 19 5 18.6 5 18V6C5 5.4 5.4 5 6 5H10"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function EditIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M4 20L7.8 19.2L18 9L15 6L4.8 16.2L4 20Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M13.8 7.2L16.8 10.2"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 
 function formatDate(value: string | null) {
   if (!value) {
@@ -165,7 +272,7 @@ function getClientPriorityTone(client: Client, now = Date.now()): ClientPriority
     return "warning";
   }
 
-  return "normal";
+  return "success";
 }
 
 function getClientSortWeight(client: Client, now = Date.now()): number {
@@ -173,7 +280,8 @@ function getClientSortWeight(client: Client, now = Date.now()): number {
 
   if (tone === "danger") return 0;
   if (tone === "warning") return 1;
-  return 2;
+  if (tone === "success") return 2;
+  return 3;
 }
 
 function sortClientsByPriority(clients: Client[]): Client[] {
@@ -197,15 +305,24 @@ function sortClientsByPriority(clients: Client[]): Client[] {
 }
 
 function formatDurationLabel(diffMs: number): string {
+  const totalMinutes = Math.floor(diffMs / (60 * 1000));
   const totalHours = Math.floor(diffMs / (60 * 60 * 1000));
   const totalDays = Math.floor(diffMs / (24 * 60 * 60 * 1000));
+  const totalMonths = Math.floor(diffMs / (30 * 24 * 60 * 60 * 1000));
+
+  if (totalMonths >= 1) {
+    return `${totalMonths} мес.`;
+  }
 
   if (totalDays >= 1) {
     return `${totalDays} д.`;
   }
 
-  const hours = Math.max(1, totalHours);
-  return `${hours} ч.`;
+  if (totalHours >= 1) {
+    return `${Math.max(1, totalHours)} ч.`;
+  }
+
+  return `${Math.max(1, totalMinutes)} мин.`;
 }
 
 function getClientDueLabel(client: Client, now = Date.now()): string | null {
@@ -214,14 +331,18 @@ function getClientDueLabel(client: Client, now = Date.now()): string | null {
     return null;
   }
 
-  const prefix = dueInfo.kind === "callback" ? "Перезвонить" : "Нет ответа";
   const diffMs = dueInfo.dueAtMs - now;
+  const dueDate = formatDate(new Date(dueInfo.dueAtMs).toISOString());
 
   if (diffMs <= 0) {
-    return `${prefix}: просрочено ${formatDurationLabel(Math.abs(diffMs))}`;
+    return `${formatDurationLabel(Math.abs(diffMs))} назад • ${dueDate}`;
   }
 
-  return `${prefix}: через ${formatDurationLabel(diffMs)}`;
+  return `через ${formatDurationLabel(diffMs)} • ${dueDate}`;
+}
+
+function formatBooleanLabel(value: boolean): string {
+  return value ? "Да" : "Нет";
 }
 
 export default function App() {
@@ -245,9 +366,15 @@ export default function App() {
   const sortedClients = sortClientsByPriority(clients);
   const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
   const selectedClient = clients.find((client) => client.id === selectedClientId) ?? null;
-  const overdueTasks = sortedClients.filter((client) => getClientPriorityTone(client) === "danger");
-  const todayTasks = sortedClients.filter((client) => getClientPriorityTone(client) === "warning");
+  const taskClients = sortedClients.filter((client) => {
+    const tone = getClientPriorityTone(client);
+    return tone === "danger" || tone === "warning";
+  });
   const visibleClients = sortedClients.filter((client) => {
+    if (activeFilter === "tasks") {
+      const tone = getClientPriorityTone(client);
+      return tone === "danger" || tone === "warning";
+    }
     if (activeFilter === "inWork") return !client.no_answer;
     if (activeFilter === "duplicate") return client.is_duplicate;
     if (activeFilter === "callback") return Boolean(client.callback_at);
@@ -452,7 +579,7 @@ export default function App() {
           onClick={handleTopBack}
           aria-label="Назад"
         >
-          ←
+          <ArrowLeftIcon />
         </button>
 
         <span className="brand-mark">LiteLux CRM</span>
@@ -463,7 +590,7 @@ export default function App() {
             onClick={() => setScreen("settings")}
             aria-label="Настройки"
           >
-            ⚙
+            <SettingsIcon />
           </button>
         ) : (
           <span className="topbar__spacer" />
@@ -486,19 +613,18 @@ export default function App() {
     );
   }
 
-  function renderTaskList(title: string, taskClients: Client[]) {
+  function renderTaskList(taskClients: Client[]) {
     if (taskClients.length === 0) {
       return null;
     }
 
     return (
       <div className="task-block">
-        <div className="task-block__title">{title}</div>
         <div className="client-list client-list--table client-list--tasks">
           {taskClients.map((client) => (
             <article
               className={`client-row client-row--${getClientPriorityTone(client)}`}
-              key={`${title}-${client.id}`}
+              key={`task-${client.id}`}
               onClick={() => openView(client)}
             >
               <div className="client-row__id">{client.client_number}</div>
@@ -556,41 +682,75 @@ export default function App() {
 
             <div className="detail-card__meta">{getClientDueLabel(selectedClient) || "Без задачи"}</div>
 
-            {selectedClient.notes ? (
-              <div className="detail-card__notes">{selectedClient.notes}</div>
-            ) : null}
-
-            <div className="detail-card__actions">
-              <button
-                type="button"
-                className="detail-action"
-                onClick={() => window.open(`tel:${selectedClient.phone}`)}
-                aria-label="Позвонить"
-              >
-                ☎
-              </button>
-              <button
-                type="button"
-                className="detail-action"
-                onClick={() => {
-                  if (selectedClient.link) {
-                    openExternalLink(selectedClient.link);
-                  }
-                }}
-                disabled={!selectedClient.link}
-                aria-label="Открыть ссылку"
-              >
-                ↗
-              </button>
-              <button
-                type="button"
-                className="detail-action"
-                onClick={() => openEditForm(selectedClient)}
-                aria-label="Редактировать"
-              >
-                ✎
-              </button>
+            <div className="detail-card__grid">
+              <div className="detail-item">
+                <span>Комиссия</span>
+                <strong>{selectedClient.commission ?? 0}%</strong>
+              </div>
+              <div className="detail-item">
+                <span>Перезвонить</span>
+                <strong>{selectedClient.callback_at ? formatDate(selectedClient.callback_at) : "Не назначено"}</strong>
+              </div>
+              <div className="detail-item">
+                <span>Нет ответа</span>
+                <strong>{formatBooleanLabel(selectedClient.no_answer)}</strong>
+              </div>
+              <div className="detail-item">
+                <span>Только клиенты</span>
+                <strong>{formatBooleanLabel(selectedClient.only_clients)}</strong>
+              </div>
+              <div className="detail-item">
+                <span>Дубль</span>
+                <strong>{formatBooleanLabel(selectedClient.is_duplicate)}</strong>
+              </div>
+              <div className="detail-item">
+                <span>Эксклюзив</span>
+                <strong>{formatBooleanLabel(selectedClient.is_exclusive)}</strong>
+              </div>
+              <div className="detail-item">
+                <span>Ссылка</span>
+                <strong>{selectedClient.link ? "Есть" : "Нет"}</strong>
+              </div>
             </div>
+
+            {selectedClient.notes ? (
+              <div className="detail-card__notes">
+                <span>Комментарий</span>
+                <strong>{selectedClient.notes}</strong>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="detail-action-bar">
+            <button
+              type="button"
+              className="detail-action"
+              onClick={() => window.open(`tel:${selectedClient.phone}`)}
+              aria-label="Позвонить"
+            >
+              <PhoneIcon />
+            </button>
+            <button
+              type="button"
+              className="detail-action"
+              onClick={() => {
+                if (selectedClient.link) {
+                  openExternalLink(selectedClient.link);
+                }
+              }}
+              disabled={!selectedClient.link}
+              aria-label="Открыть ссылку"
+            >
+              <ExternalLinkIcon />
+            </button>
+            <button
+              type="button"
+              className="detail-action"
+              onClick={() => openEditForm(selectedClient)}
+              aria-label="Редактировать"
+            >
+              <EditIcon />
+            </button>
           </div>
         </section>
       );
@@ -868,11 +1028,11 @@ export default function App() {
 
         <div className="section-block">
           <div className="section-block__title">Задачи</div>
-          {renderTaskList("Просрочено", overdueTasks)}
-          {renderTaskList("Сегодня", todayTasks)}
+          {renderTaskList(taskClients)}
         </div>
 
         <div className="filter-row">
+          {renderFilterButton("tasks", "Задачи")}
           {renderFilterButton("inWork", "В работе")}
           {renderFilterButton("duplicate", "Дубль")}
           {renderFilterButton("callback", "Перезвонить")}
@@ -951,7 +1111,7 @@ export default function App() {
           onClick={goToList}
           aria-label="Вернуться назад"
         >
-          ←
+          <ArrowLeftIcon />
         </button>
       )}
     </main>

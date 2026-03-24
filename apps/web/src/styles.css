@@ -30,9 +30,13 @@ body,
   margin: 0;
   height: 100%;
   min-height: 100%;
+  background:
+    radial-gradient(circle at top, rgba(230, 166, 85, 0.24), transparent 28%),
+    linear-gradient(180deg, #241913 0%, #16110e 56%, #110d0b 100%);
 }
 
 body {
+  overflow: hidden;
   min-height: 100dvh;
   overscroll-behavior: none;
 }
@@ -52,6 +56,7 @@ a {
 
 .app-shell {
   position: relative;
+  height: 100dvh;
   min-height: 100dvh;
   overflow: hidden;
 }
@@ -69,10 +74,13 @@ a {
 .app-shell__content {
   position: relative;
   z-index: 1;
-  max-width: 560px;
-  margin: 0 auto;
+  width: min(100%, 480px);
+  height: 100dvh;
   min-height: 100dvh;
-  padding: 12px 16px 110px;
+  margin: 0 auto;
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .topbar {
@@ -135,14 +143,23 @@ a {
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.06);
   color: #fff7ec;
-  font-size: 1.2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .icon-button--compact {
   width: 42px;
   height: 42px;
   border-radius: 12px;
-  font-size: 1rem;
+}
+
+.icon-button svg,
+.detail-action svg,
+.fab--secondary svg {
+  width: 20px;
+  height: 20px;
+  display: block;
 }
 
 .icon-button:hover,
@@ -165,7 +182,7 @@ a {
 }
 
 .sheet--list {
-  min-height: calc(100vh - 28px);
+  min-height: calc(100dvh - env(safe-area-inset-top, 0px) - 16px);
 }
 
 .sheet__header {
@@ -334,6 +351,13 @@ a {
     0 0 24px rgba(255, 197, 92, 0.18);
 }
 
+.client-row--success {
+  border-color: rgba(87, 210, 135, 0.68);
+  box-shadow:
+    0 0 0 1px rgba(87, 210, 135, 0.16),
+    0 0 24px rgba(87, 210, 135, 0.16);
+}
+
 .client-row--danger {
   border-color: rgba(255, 109, 109, 0.78);
   box-shadow:
@@ -390,12 +414,13 @@ a {
 }
 
 .sheet--view {
-  min-height: calc(100vh - 28px);
+  min-height: calc(100dvh - env(safe-area-inset-top, 0px) - 16px);
+  padding-bottom: 108px;
 }
 
 .detail-card {
   display: grid;
-  gap: 14px;
+  gap: 16px;
   padding: 18px;
   border-radius: 22px;
   border: 1px solid var(--line);
@@ -407,6 +432,13 @@ a {
   box-shadow:
     0 0 0 1px rgba(255, 197, 92, 0.18),
     0 0 24px rgba(255, 197, 92, 0.18);
+}
+
+.detail-card--success {
+  border-color: rgba(87, 210, 135, 0.68);
+  box-shadow:
+    0 0 0 1px rgba(87, 210, 135, 0.16),
+    0 0 24px rgba(87, 210, 135, 0.16);
 }
 
 .detail-card--danger {
@@ -451,14 +483,59 @@ a {
   font-size: 0.92rem;
 }
 
+.detail-card__grid {
+  display: grid;
+  gap: 10px;
+}
+
+.detail-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 225, 191, 0.08);
+}
+
+.detail-item span,
+.detail-card__notes span {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.detail-item strong,
+.detail-card__notes strong {
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-align: right;
+}
+
 .detail-card__notes {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 225, 191, 0.08);
   line-height: 1.45;
 }
 
-.detail-card__actions {
+.detail-action-bar {
+  position: fixed;
+  left: 50%;
+  bottom: 22px;
+  z-index: 8;
   display: flex;
   gap: 12px;
-  margin-top: 6px;
+  padding: 10px 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 225, 191, 0.12);
+  background: rgba(22, 16, 13, 0.78);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.28);
+  transform: translateX(calc(-50% - 0px));
 }
 
 .detail-action {
@@ -468,7 +545,9 @@ a {
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.05);
   color: var(--accent-strong);
-  font-size: 1.2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .detail-action:disabled {
@@ -634,7 +713,7 @@ a {
 
 .fab {
   position: fixed;
-  right: calc(50% - min(280px, 50vw) + 52px);
+  right: 34px;
   bottom: 52px;
   z-index: 6;
   width: auto;
@@ -652,12 +731,52 @@ a {
 .fab--secondary {
   background: rgba(255, 255, 255, 0.12);
   color: #fff7ec;
-  font-size: 1.55rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (min-width: 768px) {
+  body {
+    display: grid;
+    place-items: center;
+    padding: 24px;
+  }
+
+  .app-shell {
+    width: min(430px, calc(100vw - 48px));
+    max-width: 430px;
+    height: min(900px, calc(100dvh - 48px));
+    min-height: 0;
+    border-radius: 36px;
+    border: 1px solid rgba(255, 225, 191, 0.12);
+    box-shadow:
+      0 24px 80px rgba(0, 0, 0, 0.45),
+      0 0 0 6px rgba(255, 188, 102, 0.08);
+  }
+
+  .app-shell__content,
+  .sheet--list,
+  .sheet--view {
+    height: 100%;
+    min-height: 100%;
+  }
+
+  .fab {
+    right: calc(50vw - 215px + 36px);
+    bottom: calc(max(24px, (100dvh - min(900px, calc(100dvh - 48px))) / 2) + 28px);
+  }
+
+  .detail-action-bar {
+    width: calc(100% - 32px);
+    max-width: 398px;
+  }
 }
 
 @media (max-width: 640px) {
   .app-shell__content {
-    padding: 10px 12px 108px;
+    width: 100%;
+    padding: calc(env(safe-area-inset-top, 0px) + 24px) 12px 0;
   }
 
   .topbar h1 {
@@ -679,7 +798,17 @@ a {
   }
 
   .sheet--list {
-    min-height: calc(100vh - 20px);
+    min-height: calc(100dvh - env(safe-area-inset-top, 0px) - 24px);
+  }
+
+  .sheet--view {
+    min-height: calc(100dvh - env(safe-area-inset-top, 0px) - 24px);
+    padding-bottom: 104px;
+  }
+
+  .fab {
+    right: 26px;
+    bottom: 44px;
   }
 
   .switch-grid {
@@ -694,6 +823,33 @@ a {
 
   .client-row {
     grid-template-columns: 56px minmax(0, 1fr);
+  }
+
+  .detail-card__top {
+    grid-template-columns: 56px minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .detail-card__number {
+    width: 56px;
+    height: 56px;
+  }
+
+  .detail-item {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .detail-item strong,
+  .detail-card__notes strong {
+    text-align: left;
+  }
+
+  .detail-action-bar {
+    bottom: 16px;
+    gap: 10px;
+    padding: 8px 10px;
   }
 
   .fab {
