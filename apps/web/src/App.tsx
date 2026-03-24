@@ -1,7 +1,7 @@
-import { FormEvent, startTransition, useEffect, useState } from "react";
-import { getTelegramWebApp, openExternalLink } from "./lib/telegram";
+import { FormEvent, TouchEvent, startTransition, useEffect, useRef, useState } from "react";
+import { getTelegramWebApp, initTelegramApp, openExternalLink } from "./lib/telegram";
 
-type Screen = "list" | "create" | "settings";
+type Screen = "list" | "view" | "create" | "settings";
 
 type Client = {
   id: string;
@@ -16,6 +16,9 @@ type Client = {
   only_clients: boolean;
   no_answer: boolean;
   callback_at: string | null;
+  callback_reminded_at?: string | null;
+  no_answer_marked_at?: string | null;
+  no_answer_reminded_at?: string | null;
   notes: string;
   created_at: string;
 };
@@ -45,6 +48,10 @@ type SettingsFormState = {
   telegramBotToken: string;
   telegramEnabled: boolean;
 };
+
+type ClientPriorityTone = "normal" | "warning" | "danger";
+type ClientFilter = "inWork" | "duplicate" | "callback" | "noAnswer" | "onlyClients" | "archive";
+type ClientDueKind = "callback" | "noAnswer";
 
 const API_URL = import.meta.env.VITE_API_URL || window.location.origin;
 
@@ -109,9 +116,118 @@ function clientToFormState(client: Client): ClientFormState {
   };
 }
 
+function getNoAnswerDueAt(client: Client): number | null {
+  if (!client.no_answer || !client.no_answer_marked_at) {
+    return null;
+  }
+
+  const markedAtMs = new Date(client.no_answer_marked_at).getTime();
+  if (Number.isNaN(markedAtMs)) {
+    return null;
+  }
+
+  return markedAtMs + 24 * 60 * 60 * 1000;
+}
+
+function getClientDueInfo(client: Client): { kind: ClientDueKind; dueAtMs: number } | null {
+  const dueEntries: Array<{ kind: ClientDueKind; dueAtMs: number }> = [];
+
+  if (client.callback_at) {
+    const callbackAtMs = new Date(client.callback_at).getTime();
+    if (!Number.isNaN(callbackAtMs)) {
+      dueEntries.push({ kind: "callback", dueAtMs: callbackAtMs });
+    }
+  }
+
+  const noAnswerDueAt = getNoAnswerDueAt(client);
+  if (noAnswerDueAt !== null) {
+    dueEntries.push({ kind: "noAnswer", dueAtMs: noAnswerDueAt });
+  }
+
+  if (dueEntries.length === 0) {
+    return null;
+  }
+
+  return dueEntries.sort((left, right) => left.dueAtMs - right.dueAtMs)[0];
+}
+
+function getClientPriorityTone(client: Client, now = Date.now()): ClientPriorityTone {
+  const dueInfo = getClientDueInfo(client);
+  if (!dueInfo) {
+    return "normal";
+  }
+
+  if (dueInfo.dueAtMs <= now) {
+    return "danger";
+  }
+
+  if (dueInfo.dueAtMs - now <= 24 * 60 * 60 * 1000) {
+    return "warning";
+  }
+
+  return "normal";
+}
+
+function getClientSortWeight(client: Client, now = Date.now()): number {
+  const tone = getClientPriorityTone(client, now);
+
+  if (tone === "danger") return 0;
+  if (tone === "warning") return 1;
+  return 2;
+}
+
+function sortClientsByPriority(clients: Client[]): Client[] {
+  const now = Date.now();
+
+  return [...clients].sort((left, right) => {
+    const toneDiff = getClientSortWeight(left, now) - getClientSortWeight(right, now);
+    if (toneDiff !== 0) {
+      return toneDiff;
+    }
+
+    const leftCallback = getClientDueInfo(left)?.dueAtMs ?? Number.POSITIVE_INFINITY;
+    const rightCallback = getClientDueInfo(right)?.dueAtMs ?? Number.POSITIVE_INFINITY;
+
+    if (leftCallback !== rightCallback) {
+      return leftCallback - rightCallback;
+    }
+
+    return right.client_number - left.client_number;
+  });
+}
+
+function formatDurationLabel(diffMs: number): string {
+  const totalHours = Math.floor(diffMs / (60 * 60 * 1000));
+  const totalDays = Math.floor(diffMs / (24 * 60 * 60 * 1000));
+
+  if (totalDays >= 1) {
+    return `${totalDays} д.`;
+  }
+
+  const hours = Math.max(1, totalHours);
+  return `${hours} ч.`;
+}
+
+function getClientDueLabel(client: Client, now = Date.now()): string | null {
+  const dueInfo = getClientDueInfo(client);
+  if (!dueInfo) {
+    return null;
+  }
+
+  const prefix = dueInfo.kind === "callback" ? "Перезвонить" : "Нет ответа";
+  const diffMs = dueInfo.dueAtMs - now;
+
+  if (diffMs <= 0) {
+    return `${prefix}: просрочено ${formatDurationLabel(Math.abs(diffMs))}`;
+  }
+
+  return `${prefix}: через ${formatDurationLabel(diffMs)}`;
+}
+
 export default function App() {
   const [screen, setScreen] = useState<Screen>("list");
   const [clients, setClients] = useState<Client[]>([]);
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [editingClientId, setEditingClientId] = useState<string | null>(null);
   const [settings, setSettings] = useState<Settings>({
     telegramBotUsername: "",
@@ -125,11 +241,23 @@ export default function App() {
   const [savingSettings, setSavingSettings] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formState, setFormState] = useState<ClientFormState>(initialFormState);
+  const [activeFilter, setActiveFilter] = useState<ClientFilter>("inWork");
+  const sortedClients = sortClientsByPriority(clients);
+  const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
+  const selectedClient = clients.find((client) => client.id === selectedClientId) ?? null;
+  const overdueTasks = sortedClients.filter((client) => getClientPriorityTone(client) === "danger");
+  const todayTasks = sortedClients.filter((client) => getClientPriorityTone(client) === "warning");
+  const visibleClients = sortedClients.filter((client) => {
+    if (activeFilter === "inWork") return !client.no_answer;
+    if (activeFilter === "duplicate") return client.is_duplicate;
+    if (activeFilter === "callback") return Boolean(client.callback_at);
+    if (activeFilter === "noAnswer") return client.no_answer;
+    if (activeFilter === "onlyClients") return client.only_clients;
+    return !client.callback_at && !client.no_answer;
+  });
 
   useEffect(() => {
-    const telegram = getTelegramWebApp();
-    telegram?.ready();
-    telegram?.expand();
+    initTelegramApp();
   }, []);
 
   useEffect(() => {
@@ -275,11 +403,18 @@ export default function App() {
 
   function openCreateForm() {
     setEditingClientId(null);
+    setSelectedClientId(null);
     setFormState(initialFormState);
     setScreen("create");
   }
 
+  function openView(client: Client) {
+    setSelectedClientId(client.id);
+    setScreen("view");
+  }
+
   function openEditForm(client: Client) {
+    setSelectedClientId(client.id);
     setEditingClientId(client.id);
     setFormState(clientToFormState(client));
     setScreen("create");
@@ -287,31 +422,180 @@ export default function App() {
 
   function goToList() {
     setScreen("list");
+    setSelectedClientId(null);
     setEditingClientId(null);
     setFormState(initialFormState);
   }
 
-  function renderMainHero() {
-    return (
-      <div className="sheet__hero">
-        <div className="sheet__hero-copy">
-          <span className="brand-mark">LiteLux CRM</span>
-          <h1>Мини-приложение для Telegram</h1>
-        </div>
+  function handleTopBack() {
+    if (screen !== "list") {
+      goToList();
+      return;
+    }
 
+    const telegram = getTelegramWebApp();
+    const closeTelegram = (telegram as { close?: () => void } | null)?.close;
+    if (closeTelegram) {
+      closeTelegram();
+      return;
+    }
+
+    window.history.back();
+  }
+
+  function renderMainHero(showSettings = false) {
+    return (
+      <div className="topbar topbar--compact">
         <button
           type="button"
-          className="icon-button"
-          onClick={() => setScreen("settings")}
-          aria-label="Настройки"
+          className="icon-button icon-button--compact"
+          onClick={handleTopBack}
+          aria-label="Назад"
         >
-          ⚙
+          ←
         </button>
+
+        <span className="brand-mark">LiteLux CRM</span>
+        {showSettings ? (
+          <button
+            type="button"
+            className="icon-button"
+            onClick={() => setScreen("settings")}
+            aria-label="Настройки"
+          >
+            ⚙
+          </button>
+        ) : (
+          <span className="topbar__spacer" />
+        )}
       </div>
     );
   }
 
+  function renderFilterButton(filter: ClientFilter, label: string) {
+    const active = activeFilter === filter;
+
+    return (
+      <button
+        type="button"
+        className={`filter-chip ${active ? "is-active" : ""}`}
+        onClick={() => setActiveFilter(filter)}
+      >
+        {label}
+      </button>
+    );
+  }
+
+  function renderTaskList(title: string, taskClients: Client[]) {
+    if (taskClients.length === 0) {
+      return null;
+    }
+
+    return (
+      <div className="task-block">
+        <div className="task-block__title">{title}</div>
+        <div className="client-list client-list--table client-list--tasks">
+          {taskClients.map((client) => (
+            <article
+              className={`client-row client-row--${getClientPriorityTone(client)}`}
+              key={`${title}-${client.id}`}
+              onClick={() => openView(client)}
+            >
+              <div className="client-row__id">{client.client_number}</div>
+              <div className="client-row__body">
+                <div className="client-row__main">
+                  <strong>{client.name}</strong>
+                  <a href={`tel:${client.phone}`} onClick={(event) => event.stopPropagation()}>
+                    {client.phone}
+                  </a>
+                </div>
+                <div className="client-row__address-line">{client.address || "Без адреса"}</div>
+                <div className="client-row__meta">{getClientDueLabel(client)}</div>
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  function handleTouchStart(event: TouchEvent<HTMLElement>) {
+    const touch = event.touches[0];
+    swipeStartRef.current = { x: touch.clientX, y: touch.clientY };
+  }
+
+  function handleTouchEnd(event: TouchEvent<HTMLElement>) {
+    if (!swipeStartRef.current) {
+      return;
+    }
+
+    const touch = event.changedTouches[0];
+    const deltaX = touch.clientX - swipeStartRef.current.x;
+    const deltaY = Math.abs(touch.clientY - swipeStartRef.current.y);
+    const startedFromEdge = swipeStartRef.current.x <= 32;
+    swipeStartRef.current = null;
+
+    if (startedFromEdge && deltaX >= 72 && deltaY <= 48) {
+      handleTopBack();
+    }
+  }
+
   function renderContent() {
+    if (screen === "view" && selectedClient) {
+      return (
+        <section className="sheet sheet--view">
+          <div className={`detail-card detail-card--${getClientPriorityTone(selectedClient)}`}>
+            <div className="detail-card__top">
+              <div className="detail-card__number">{selectedClient.client_number}</div>
+              <div className="detail-card__info">
+                <h2>{selectedClient.name}</h2>
+                <a href={`tel:${selectedClient.phone}`}>{selectedClient.phone}</a>
+                <div className="detail-card__address">{selectedClient.address || "Без адреса"}</div>
+              </div>
+            </div>
+
+            <div className="detail-card__meta">{getClientDueLabel(selectedClient) || "Без задачи"}</div>
+
+            {selectedClient.notes ? (
+              <div className="detail-card__notes">{selectedClient.notes}</div>
+            ) : null}
+
+            <div className="detail-card__actions">
+              <button
+                type="button"
+                className="detail-action"
+                onClick={() => window.open(`tel:${selectedClient.phone}`)}
+                aria-label="Позвонить"
+              >
+                ☎
+              </button>
+              <button
+                type="button"
+                className="detail-action"
+                onClick={() => {
+                  if (selectedClient.link) {
+                    openExternalLink(selectedClient.link);
+                  }
+                }}
+                disabled={!selectedClient.link}
+                aria-label="Открыть ссылку"
+              >
+                ↗
+              </button>
+              <button
+                type="button"
+                className="detail-action"
+                onClick={() => openEditForm(selectedClient)}
+                aria-label="Редактировать"
+              >
+                ✎
+              </button>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
     if (screen === "settings") {
       const connectLink = settings.telegramBotUsername
         ? `https://t.me/${settings.telegramBotUsername}`
@@ -578,77 +862,56 @@ export default function App() {
 
     return (
       <section className="sheet sheet--list">
-        {renderMainHero()}
+        {renderMainHero(true)}
 
         {error ? <div className="error-banner">{error}</div> : null}
 
-        <div className="sheet__header">
-          <div>
-            <p className="eyebrow">Главная</p>
-            <h2>Список клиентов</h2>
-          </div>
-          <div className="pill">{clients.length}</div>
+        <div className="section-block">
+          <div className="section-block__title">Задачи</div>
+          {renderTaskList("Просрочено", overdueTasks)}
+          {renderTaskList("Сегодня", todayTasks)}
         </div>
 
-        <div className="hint-card hint-card--compact">
-          Список клиентов. Нажмите на строку, чтобы открыть редактирование.
+        <div className="filter-row">
+          {renderFilterButton("inWork", "В работе")}
+          {renderFilterButton("duplicate", "Дубль")}
+          {renderFilterButton("callback", "Перезвонить")}
+          {renderFilterButton("noAnswer", "Нет ответа")}
+          {renderFilterButton("onlyClients", "Только клиенты")}
+          {renderFilterButton("archive", "Архив")}
         </div>
 
         {loading ? <div className="hint-card">Загрузка клиентов...</div> : null}
 
-        {!loading && clients.length === 0 ? (
+        {!loading && visibleClients.length === 0 ? (
           <div className="empty-card">
-            <strong>Пока пусто</strong>
-            <p>Нажмите кнопку `+` справа снизу и добавьте первого клиента.</p>
+            <strong>{clients.length === 0 ? "Пока пусто" : "Ничего не найдено"}</strong>
+            <p>
+              {clients.length === 0
+                ? "Нажмите кнопку `+` справа снизу и добавьте первого клиента."
+                : "Снимите фильтр или переключитесь на другой."}
+            </p>
           </div>
         ) : null}
 
-        <div className="list-head">
-          <span>ID</span>
-          <span>Адрес</span>
-          <span>Имя</span>
-        </div>
-
         <div className="client-list client-list--table">
-          {clients.map((client) => (
+          {visibleClients.map((client) => (
             <article
-              className="client-row"
+              className={`client-row client-row--${getClientPriorityTone(client)}`}
               key={client.id}
-              onClick={() => openEditForm(client)}
+              onClick={() => openView(client)}
             >
-              <div className="client-row__id">#{client.client_number}</div>
-              <div className="client-row__address">
-                <strong>{client.address || "Без адреса"}</strong>
-                <span>{client.callback_at ? formatDate(client.callback_at) : "Без перезвона"}</span>
-              </div>
-              <div className="client-row__person">
-                <strong>{client.name}</strong>
-                <div className="client-row__subline">
+              <div className="client-row__id">{client.client_number}</div>
+              <div className="client-row__body">
+                <div className="client-row__main">
+                  <strong>{client.name}</strong>
                   <a href={`tel:${client.phone}`} onClick={(event) => event.stopPropagation()}>
                     {client.phone}
                   </a>
-                  {client.link ? (
-                    <button
-                      type="button"
-                      className="link-button link-button--small"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        openExternalLink(client.link);
-                      }}
-                    >
-                      Ссылка
-                    </button>
-                  ) : null}
                 </div>
-                <div className="client-row__tags">
-                  {client.is_duplicate ? <span className="badge">Дубль</span> : null}
-                  {client.is_exclusive ? <span className="badge">Эксклюзив</span> : null}
-                  {client.only_clients ? <span className="badge">Клиенты</span> : null}
-                  {client.no_answer ? <span className="badge">Нет ответа</span> : null}
-                  {client.commission !== null ? (
-                    <span className="badge badge--accent">{client.commission}%</span>
-                  ) : null}
-                </div>
+
+                <div className="client-row__address-line">{client.address || "Без адреса"}</div>
+                <div className="client-row__meta">{getClientDueLabel(client)}</div>
               </div>
             </article>
           ))}
@@ -658,26 +921,12 @@ export default function App() {
   }
 
   return (
-    <main className="app-shell">
+    <main className="app-shell" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
       <div className="app-shell__backdrop" />
       <div className="app-shell__content">
         {screen !== "list" ? (
           <>
-            <header className="topbar">
-              <div>
-                <span className="brand-mark">LiteLux CRM</span>
-                <h1>Мини-приложение для Telegram</h1>
-              </div>
-
-              <button
-                type="button"
-                className="icon-button"
-                onClick={() => setScreen("settings")}
-                aria-label="Настройки"
-              >
-                ⚙
-              </button>
-            </header>
+            {renderMainHero(false)}
 
             {error ? <div className="error-banner">{error}</div> : null}
           </>

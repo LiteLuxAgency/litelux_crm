@@ -19,6 +19,10 @@ export function initTelegramApp() {
   return telegram;
 }
 
+export function isTelegramMiniApp() {
+  return Boolean(getTelegramWebApp());
+}
+
 export function openExternalLink(url: string) {
   const telegram = getTelegramWebApp();
   if (telegram?.openLink) {
