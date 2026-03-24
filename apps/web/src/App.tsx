@@ -291,6 +291,26 @@ export default function App() {
     setFormState(initialFormState);
   }
 
+  function renderMainHero() {
+    return (
+      <div className="sheet__hero">
+        <div className="sheet__hero-copy">
+          <span className="brand-mark">LiteLux CRM</span>
+          <h1>Мини-приложение для Telegram</h1>
+        </div>
+
+        <button
+          type="button"
+          className="icon-button"
+          onClick={() => setScreen("settings")}
+          aria-label="Настройки"
+        >
+          ⚙
+        </button>
+      </div>
+    );
+  }
+
   function renderContent() {
     if (screen === "settings") {
       const connectLink = settings.telegramBotUsername
@@ -558,6 +578,10 @@ export default function App() {
 
     return (
       <section className="sheet sheet--list">
+        {renderMainHero()}
+
+        {error ? <div className="error-banner">{error}</div> : null}
+
         <div className="sheet__header">
           <div>
             <p className="eyebrow">Главная</p>
@@ -637,23 +661,28 @@ export default function App() {
     <main className="app-shell">
       <div className="app-shell__backdrop" />
       <div className="app-shell__content">
-        <header className="topbar">
-          <div>
-            <span className="brand-mark">LiteLux CRM</span>
-            <h1>Мини-приложение для Telegram</h1>
-          </div>
+        {screen !== "list" ? (
+          <>
+            <header className="topbar">
+              <div>
+                <span className="brand-mark">LiteLux CRM</span>
+                <h1>Мини-приложение для Telegram</h1>
+              </div>
 
-          <button
-            type="button"
-            className="icon-button"
-            onClick={() => setScreen("settings")}
-            aria-label="Настройки"
-          >
-            ⚙
-          </button>
-        </header>
+              <button
+                type="button"
+                className="icon-button"
+                onClick={() => setScreen("settings")}
+                aria-label="Настройки"
+              >
+                ⚙
+              </button>
+            </header>
 
-        {error ? <div className="error-banner">{error}</div> : null}
+            {error ? <div className="error-banner">{error}</div> : null}
+          </>
+        ) : null}
+
         {renderContent()}
       </div>
 
