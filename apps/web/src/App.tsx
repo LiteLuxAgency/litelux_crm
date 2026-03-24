@@ -332,13 +332,12 @@ function getClientDueLabel(client: Client, now = Date.now()): string | null {
   }
 
   const diffMs = dueInfo.dueAtMs - now;
-  const dueDate = formatDate(new Date(dueInfo.dueAtMs).toISOString());
 
   if (diffMs <= 0) {
-    return `${formatDurationLabel(Math.abs(diffMs))} назад • ${dueDate}`;
+    return `${formatDurationLabel(Math.abs(diffMs))} назад`;
   }
 
-  return `через ${formatDurationLabel(diffMs)} • ${dueDate}`;
+  return `через ${formatDurationLabel(diffMs)}`;
 }
 
 function formatBooleanLabel(value: boolean): string {
@@ -366,10 +365,6 @@ export default function App() {
   const sortedClients = sortClientsByPriority(clients);
   const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
   const selectedClient = clients.find((client) => client.id === selectedClientId) ?? null;
-  const taskClients = sortedClients.filter((client) => {
-    const tone = getClientPriorityTone(client);
-    return tone === "danger" || tone === "warning";
-  });
   const visibleClients = sortedClients.filter((client) => {
     if (activeFilter === "tasks") {
       const tone = getClientPriorityTone(client);
@@ -610,38 +605,6 @@ export default function App() {
       >
         {label}
       </button>
-    );
-  }
-
-  function renderTaskList(taskClients: Client[]) {
-    if (taskClients.length === 0) {
-      return null;
-    }
-
-    return (
-      <div className="task-block">
-        <div className="client-list client-list--table client-list--tasks">
-          {taskClients.map((client) => (
-            <article
-              className={`client-row client-row--${getClientPriorityTone(client)}`}
-              key={`task-${client.id}`}
-              onClick={() => openView(client)}
-            >
-              <div className="client-row__id">{client.client_number}</div>
-              <div className="client-row__body">
-                <div className="client-row__main">
-                  <strong>{client.name}</strong>
-                  <a href={`tel:${client.phone}`} onClick={(event) => event.stopPropagation()}>
-                    {client.phone}
-                  </a>
-                </div>
-                <div className="client-row__address-line">{client.address || "Без адреса"}</div>
-                <div className="client-row__meta">{getClientDueLabel(client)}</div>
-              </div>
-            </article>
-          ))}
-        </div>
-      </div>
     );
   }
 
@@ -1025,11 +988,6 @@ export default function App() {
         {renderMainHero(true)}
 
         {error ? <div className="error-banner">{error}</div> : null}
-
-        <div className="section-block">
-          <div className="section-block__title">Задачи</div>
-          {renderTaskList(taskClients)}
-        </div>
 
         <div className="filter-row">
           {renderFilterButton("tasks", "Задачи")}
