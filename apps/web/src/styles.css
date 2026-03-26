@@ -865,49 +865,67 @@ a {
 }
 
 @media (max-width: 767px) {
+  .app-shell {
+    --phone-inline: 14px;
+    --phone-top: 24px;
+    --phone-top-telegram: 52px;
+    --phone-bottom: calc(env(safe-area-inset-bottom, 0px) + 28px);
+    --phone-sheet-bottom: 118px;
+    --phone-radius: 22px;
+    --phone-chip-height: 40px;
+    --phone-control-size: 44px;
+    --phone-action-offset: calc(env(safe-area-inset-bottom, 0px) + 18px);
+    --phone-action-inset: 4px;
+    --phone-fab-right: 22px;
+    --phone-fab-bottom: calc(env(safe-area-inset-bottom, 0px) + 42px);
+  }
+
   .app-shell__content {
     width: 100%;
-    padding-inline: 12px;
+    padding: calc(env(safe-area-inset-top, 0px) + var(--phone-top)) var(--phone-inline)
+      var(--phone-bottom);
+  }
+
+  .app-shell--telegram .app-shell__content {
+    padding-top: calc(env(safe-area-inset-top, 0px) + var(--phone-top-telegram));
   }
 
   .sheet {
-    padding: 16px;
-    border-radius: 24px;
+    padding: 0 0 var(--phone-sheet-bottom);
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+
+  .sheet--list,
+  .sheet--view {
+    min-height: calc(100dvh - env(safe-area-inset-top, 0px) - var(--phone-top));
+  }
+
+  .sheet--view {
+    padding-bottom: calc(var(--phone-sheet-bottom) + 18px);
+  }
+
+  .detail-view-shell {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
   }
 
   .topbar--compact {
-    grid-template-columns: 40px 1fr 46px;
-  }
-
-  .client-row {
-    grid-template-columns: 56px minmax(0, 1fr);
-  }
-
-  .detail-card__top {
-    grid-template-columns: 56px minmax(0, 1fr);
-    gap: 14px;
-  }
-
-  .detail-card__number {
-    width: 56px;
-    height: 56px;
-  }
-}
-
-@media (max-width: 430px) {
-  .app-shell__content {
-    padding: calc(env(safe-area-inset-top, 0px) + 24px) 12px 0;
+    grid-template-columns: calc(var(--phone-control-size) - 6px) 1fr var(--phone-control-size);
+    gap: 10px;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
   }
 
   .topbar h1 {
     font-size: 1.5rem;
-  }
-
-  .topbar--compact {
-    grid-template-columns: 38px 1fr 44px;
-    gap: 10px;
-    margin-bottom: 14px;
-    padding-bottom: 12px;
   }
 
   .brand-mark {
@@ -915,84 +933,16 @@ a {
     font-size: 0.88rem;
   }
 
-  .sheet--list {
-    min-height: calc(100dvh - env(safe-area-inset-top, 0px) - 24px);
-  }
-
-  .sheet--view {
-    min-height: calc(100dvh - env(safe-area-inset-top, 0px) - 24px);
-    padding-bottom: 136px;
-  }
-
-  .fab {
-    right: 26px;
-    bottom: 44px;
-  }
-
-  .switch-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .client-card__top,
-  .client-card__meta {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .detail-item {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .detail-item strong,
-  .detail-card__notes strong {
-    text-align: left;
-  }
-
-  .detail-action-bar {
-    gap: 8px;
-    padding: 10px;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 18px);
-    margin-inline: 8px;
-  }
-
-  .fab {
-    right: 24px;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 48px);
-  }
-}
-
-@media (max-width: 360px) {
-  .app-shell__content {
-    padding: calc(env(safe-area-inset-top, 0px) + 20px) 10px 0;
-  }
-
-  .topbar--compact {
-    grid-template-columns: 36px 1fr 40px;
-  }
-
-  .brand-mark {
-    padding: 8px 14px;
-    font-size: 0.82rem;
-    letter-spacing: 0.06em;
-  }
-
   .icon-button {
-    width: 44px;
-    height: 44px;
+    width: var(--phone-control-size);
+    height: var(--phone-control-size);
     border-radius: 14px;
   }
 
   .icon-button--compact {
-    width: 36px;
-    height: 36px;
+    width: calc(var(--phone-control-size) - 6px);
+    height: calc(var(--phone-control-size) - 6px);
     border-radius: 11px;
-  }
-
-  .sheet {
-    padding: 14px;
-    border-radius: 22px;
   }
 
   .filter-row {
@@ -1002,26 +952,26 @@ a {
   }
 
   .filter-chip {
-    min-height: 38px;
+    min-height: var(--phone-chip-height);
     padding: 0 12px;
     border-radius: 13px;
     font-size: 0.94rem;
   }
 
+  .switch-grid {
+    grid-template-columns: 1fr;
+  }
+
   .client-row {
-    grid-template-columns: 50px minmax(0, 1fr);
+    grid-template-columns: 52px minmax(0, 1fr);
     gap: 12px;
-    padding: 12px;
-    border-radius: 16px;
-    background:
-      radial-gradient(circle at 10% 14%, rgba(255, 196, 120, 0.09), transparent 16%),
-      linear-gradient(135deg, rgba(58, 43, 35, 0.95), rgba(30, 23, 20, 0.94) 60%, rgba(22, 18, 16, 0.96)),
-      linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01));
+    padding: 13px;
+    border-radius: 17px;
   }
 
   .client-row__id {
-    width: 50px;
-    height: 50px;
+    width: 52px;
+    height: 52px;
     border-radius: 13px;
     font-size: 1rem;
   }
@@ -1036,33 +986,36 @@ a {
 
   .client-row__main a,
   .client-row__address-line {
-    font-size: 0.88rem;
+    font-size: 0.9rem;
   }
 
   .client-row__meta {
     font-size: 0.8rem;
+    text-align: left;
   }
 
-  .detail-view-shell {
-    padding: 10px;
-    border-radius: 22px;
-  }
-
-  .detail-card {
-    padding: 14px;
-    gap: 12px;
+  .client-card__top,
+  .client-card__meta {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .detail-card__top {
-    grid-template-columns: 50px minmax(0, 1fr);
-    gap: 12px;
+    grid-template-columns: 52px minmax(0, 1fr);
+    gap: 14px;
   }
 
   .detail-card__number {
-    width: 50px;
-    height: 50px;
+    width: 52px;
+    height: 52px;
     border-radius: 13px;
     font-size: 1rem;
+  }
+
+  .detail-card {
+    padding: 16px;
+    gap: 12px;
+    border-radius: var(--phone-radius);
   }
 
   .detail-card__info h2 {
@@ -1074,6 +1027,9 @@ a {
   }
 
   .detail-item {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
     padding: 11px 12px;
   }
 
@@ -1085,58 +1041,109 @@ a {
   .detail-item strong,
   .detail-card__notes strong {
     font-size: 0.9rem;
+    text-align: left;
   }
 
   .detail-action-bar {
-    gap: 6px;
-    padding: 8px;
+    gap: 8px;
+    padding: 10px;
+    bottom: var(--phone-action-offset);
+    margin-inline: var(--phone-action-inset);
     border-radius: 18px;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 14px);
-    margin-inline: 6px;
   }
 
   .detail-action {
-    height: 48px;
+    height: 50px;
     border-radius: 12px;
   }
 
   .fab {
-    right: 18px;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 42px);
-    font-size: 2.2rem;
+    right: var(--phone-fab-right);
+    bottom: var(--phone-fab-bottom);
+    font-size: 2.3rem;
+  }
+}
+
+@media (max-width: 359px) {
+  .app-shell {
+    --phone-inline: 10px;
+    --phone-top: 20px;
+    --phone-top-telegram: 46px;
+    --phone-bottom: calc(env(safe-area-inset-bottom, 0px) + 22px);
+    --phone-sheet-bottom: 108px;
+    --phone-radius: 20px;
+    --phone-chip-height: 38px;
+    --phone-control-size: 42px;
+    --phone-action-offset: calc(env(safe-area-inset-bottom, 0px) + 14px);
+    --phone-action-inset: 2px;
+    --phone-fab-right: 18px;
+    --phone-fab-bottom: calc(env(safe-area-inset-bottom, 0px) + 36px);
+  }
+
+  .brand-mark {
+    padding: 8px 14px;
+    font-size: 0.82rem;
+    letter-spacing: 0.06em;
+  }
+
+  .client-row {
+    grid-template-columns: 48px minmax(0, 1fr);
+    padding: 12px;
+    border-radius: 16px;
+    background:
+      radial-gradient(circle at 10% 14%, rgba(255, 196, 120, 0.09), transparent 16%),
+      linear-gradient(135deg, rgba(58, 43, 35, 0.95), rgba(30, 23, 20, 0.94) 60%, rgba(22, 18, 16, 0.96)),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01));
+  }
+
+  .client-row__id {
+    width: 48px;
+    height: 48px;
+    border-radius: 13px;
+    font-size: 1rem;
+  }
+
+  .detail-card {
+    padding: 14px;
+    gap: 12px;
+  }
+
+  .detail-card__top {
+    grid-template-columns: 48px minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .detail-card__number {
+    width: 48px;
+    height: 48px;
+    border-radius: 13px;
+    font-size: 1rem;
+  }
+
+  .detail-action {
+    height: 48px;
   }
 }
 
 @media (min-width: 431px) and (max-width: 767px) {
-  .app-shell__content {
-    padding: calc(env(safe-area-inset-top, 0px) + 26px) 16px 0;
-  }
-
-  .sheet--view {
-    padding-bottom: 132px;
-  }
-
-  .detail-action-bar {
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
-    margin-inline: 6px;
-  }
-
-  .fab {
-    right: 28px;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 46px);
+  .app-shell {
+    --phone-inline: 18px;
+    --phone-top: 26px;
+    --phone-top-telegram: 58px;
+    --phone-bottom: calc(env(safe-area-inset-bottom, 0px) + 32px);
+    --phone-sheet-bottom: 128px;
+    --phone-radius: 24px;
+    --phone-chip-height: 44px;
+    --phone-control-size: 46px;
+    --phone-action-offset: calc(env(safe-area-inset-bottom, 0px) + 20px);
+    --phone-action-inset: 6px;
+    --phone-fab-right: 28px;
+    --phone-fab-bottom: calc(env(safe-area-inset-bottom, 0px) + 48px);
   }
 
   .brand-mark {
     padding: 10px 18px;
     font-size: 0.94rem;
-  }
-
-  .sheet {
-    padding: 18px;
-  }
-
-  .filter-chip {
-    min-height: 44px;
   }
 
   .client-row {
