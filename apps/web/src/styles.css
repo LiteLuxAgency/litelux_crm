@@ -81,7 +81,7 @@ a {
 .app-shell__content {
   position: relative;
   z-index: 1;
-  width: min(100%, 480px);
+  width: min(100%, 500px);
   height: 100dvh;
   min-height: 100dvh;
   margin: 0 auto;
@@ -93,6 +93,10 @@ a {
 
 .app-shell__content::-webkit-scrollbar {
   display: none;
+}
+
+.app-shell--telegram .app-shell__content {
+  padding-top: calc(env(safe-area-inset-top, 0px) + 64px);
 }
 
 .topbar {
@@ -831,9 +835,9 @@ a {
   }
 
   .app-shell {
-    width: min(430px, calc(100vw - 48px));
-    max-width: 430px;
-    height: min(900px, calc(100dvh - 48px));
+    width: min(458px, calc(100vw - 40px));
+    max-width: 458px;
+    height: min(1020px, calc(100dvh - 36px));
     min-height: 0;
     border-radius: 36px;
     border: 1px solid rgba(255, 225, 191, 0.12);
@@ -850,13 +854,13 @@ a {
   }
 
   .fab {
-    right: calc(50vw - 215px + 36px);
-    bottom: calc(max(24px, (100dvh - min(900px, calc(100dvh - 48px))) / 2) + 28px);
+    right: calc(50vw - 229px + 40px);
+    bottom: calc(max(18px, (100dvh - min(1020px, calc(100dvh - 36px))) / 2) + 30px);
   }
 
   .detail-action-bar {
     width: calc(100% - 32px);
-    max-width: 398px;
+    max-width: 426px;
   }
 }
 

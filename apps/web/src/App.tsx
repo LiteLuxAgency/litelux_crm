@@ -1,5 +1,5 @@
 import { FormEvent, TouchEvent, startTransition, useEffect, useRef, useState } from "react";
-import { getTelegramWebApp, initTelegramApp, openExternalLink } from "./lib/telegram";
+import { getTelegramWebApp, initTelegramApp, isTelegramMiniApp, openExternalLink } from "./lib/telegram";
 
 type Screen = "list" | "view" | "create" | "settings";
 
@@ -400,6 +400,7 @@ function formatBooleanLabel(value: boolean): string {
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>("list");
+  const isTelegram = isTelegramMiniApp();
   const [clients, setClients] = useState<Client[]>([]);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [editingClientId, setEditingClientId] = useState<string | null>(null);
@@ -418,6 +419,7 @@ export default function App() {
   const [activeFilter, setActiveFilter] = useState<ClientFilter>("inWork");
   const sortedClients = sortClientsByPriority(clients);
   const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
+  const swipeDeltaRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const selectedClient = clients.find((client) => client.id === selectedClientId) ?? null;
   const visibleClients = sortedClients.filter((client) => {
     if (activeFilter !== "archive" && client.is_archived) return false;
@@ -701,6 +703,19 @@ export default function App() {
   function handleTouchStart(event: TouchEvent<HTMLElement>) {
     const touch = event.touches[0];
     swipeStartRef.current = { x: touch.clientX, y: touch.clientY };
+    swipeDeltaRef.current = { x: 0, y: 0 };
+  }
+
+  function handleTouchMove(event: TouchEvent<HTMLElement>) {
+    if (!swipeStartRef.current) {
+      return;
+    }
+
+    const touch = event.touches[0];
+    swipeDeltaRef.current = {
+      x: touch.clientX - swipeStartRef.current.x,
+      y: touch.clientY - swipeStartRef.current.y,
+    };
   }
 
   function handleTouchEnd(event: TouchEvent<HTMLElement>) {
@@ -708,13 +723,13 @@ export default function App() {
       return;
     }
 
-    const touch = event.changedTouches[0];
-    const deltaX = touch.clientX - swipeStartRef.current.x;
-    const deltaY = Math.abs(touch.clientY - swipeStartRef.current.y);
-    const startedFromEdge = swipeStartRef.current.x <= 32;
+    const deltaX = swipeDeltaRef.current.x;
+    const deltaY = Math.abs(swipeDeltaRef.current.y);
+    const startedFromEdge = swipeStartRef.current.x <= 56;
     swipeStartRef.current = null;
+    swipeDeltaRef.current = { x: 0, y: 0 };
 
-    if (startedFromEdge && deltaX >= 72 && deltaY <= 48) {
+    if (screen !== "list" && startedFromEdge && deltaX >= 64 && deltaY <= 56) {
       handleTopBack();
     }
   }
@@ -1140,7 +1155,12 @@ export default function App() {
   }
 
   return (
-    <main className="app-shell" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+    <main
+      className={`app-shell ${isTelegram ? "app-shell--telegram" : ""}`}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
       <div className="app-shell__backdrop" />
       <div className="app-shell__content">
         {screen !== "list" ? (
