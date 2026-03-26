@@ -421,6 +421,7 @@ export default function App() {
   const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
   const swipeDeltaRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const selectedClient = clients.find((client) => client.id === selectedClientId) ?? null;
+  const screenClassName = `app-shell--screen-${screen}`;
   const visibleClients = sortedClients.filter((client) => {
     if (activeFilter !== "archive" && client.is_archived) return false;
     if (activeFilter === "archive") return Boolean(client.is_archived);
@@ -1162,7 +1163,7 @@ export default function App() {
 
   return (
     <main
-      className={`app-shell ${isTelegram ? "app-shell--telegram" : ""} ${
+      className={`app-shell ${screenClassName} ${isTelegram ? "app-shell--telegram" : ""} ${
         screen === "list" ? "app-shell--list" : ""
       }`}
       onTouchStart={handleTouchStart}
@@ -1170,7 +1171,7 @@ export default function App() {
       onTouchEnd={handleTouchEnd}
     >
       <div className="app-shell__backdrop" />
-      <div className="app-shell__content">
+      <div className={`app-shell__content app-shell__content--${screen}`}>
         {screen !== "list" ? (
           <>
             {renderMainHero(false)}

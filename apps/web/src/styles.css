@@ -65,6 +65,10 @@ a {
 
 .app-shell {
   position: relative;
+  --layout-max-width: 500px;
+  --layout-inline: 16px;
+  --layout-top: calc(env(safe-area-inset-top, 0px) + 16px);
+  --layout-bottom: 0px;
   min-height: 100svh;
   min-height: 100dvh;
   background:
@@ -88,11 +92,11 @@ a {
 .app-shell__content {
   position: relative;
   z-index: 1;
-  width: min(100%, 500px);
+  width: min(100%, var(--layout-max-width));
   min-height: 100svh;
   min-height: 100dvh;
   margin: 0 auto;
-  padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px 0;
+  padding: var(--layout-top) var(--layout-inline) var(--layout-bottom);
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: none;
@@ -864,49 +868,184 @@ a {
 
 @media (min-width: 768px) {
   body {
-    display: grid;
-    place-items: center;
-    padding: 24px;
+    overflow-y: auto;
   }
 
   .app-shell {
-    width: min(458px, calc(100vw - 40px));
-    max-width: 458px;
-    height: min(1020px, calc(100dvh - 36px));
-    min-height: 0;
-    border-radius: 36px;
-    border: 1px solid rgba(255, 225, 191, 0.12);
-    box-shadow:
-      0 24px 80px rgba(0, 0, 0, 0.45),
-      0 0 0 6px rgba(255, 188, 102, 0.08);
+    --layout-inline: clamp(28px, 4vw, 56px);
+    --layout-top: clamp(28px, 4vw, 44px);
+    --layout-bottom: clamp(36px, 4vw, 56px);
+    overflow: visible;
   }
 
-  .app-shell--list {
+  .app-shell__backdrop {
+    inset: -4%;
+    filter: blur(64px) saturate(128%);
+  }
+
+  .app-shell__content {
+    min-height: 100svh;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+
+  .app-shell--screen-list {
+    --layout-max-width: min(1280px, calc(100vw - 64px));
+  }
+
+  .app-shell--screen-view,
+  .app-shell--screen-create,
+  .app-shell--screen-settings {
+    --layout-max-width: min(960px, calc(100vw - 64px));
+  }
+
+  .topbar--compact {
+    grid-template-columns: 52px 1fr 52px;
+    margin-bottom: 24px;
+    padding-bottom: 18px;
+  }
+
+  .topbar--main {
+    align-items: center;
+    grid-template-columns: 52px 1fr 52px;
+  }
+
+  .brand-mark {
+    padding: 12px 24px;
+    font-size: 1rem;
+  }
+
+  .brand-mark--main,
+  .topbar--main .topbar__settings-button {
+    transform: none;
+  }
+
+  .topbar__spacer--main {
+    width: 52px;
+    height: 52px;
+  }
+
+  .sheet:not(.sheet--list) {
+    max-width: 100%;
+    margin-inline: auto;
+    padding: 24px;
+    border-radius: 30px;
+  }
+
+  .sheet--list {
+    min-height: auto;
+    padding-bottom: 132px;
+  }
+
+  .sheet--view {
+    min-height: auto;
+    padding-bottom: 148px;
+  }
+
+  .filter-row {
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 22px;
+    padding: 0;
+    overflow: visible;
+  }
+
+  .client-list--table {
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 18px;
+  }
+
+  .client-row {
+    gap: 16px;
+    padding: 18px;
+    border-radius: 22px;
+  }
+
+  .client-row__main strong {
+    font-size: 1.18rem;
+  }
+
+  .detail-view-shell {
+    padding: 0;
     border: 0;
     border-radius: 0;
-    box-shadow: none;
     background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
   }
 
-  .app-shell--list .app-shell__backdrop {
-    display: none;
+  .detail-card {
+    padding: 24px;
+    border-radius: 28px;
   }
 
-  .app-shell__content,
-  .sheet--list,
-  .sheet--view {
-    height: 100%;
-    min-height: 100%;
+  .detail-card__top {
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: 20px;
   }
 
-  .fab {
-    right: calc(50vw - 229px + 40px);
-    bottom: calc(max(18px, (100dvh - min(1020px, calc(100dvh - 36px))) / 2) + 30px);
+  .detail-card__number {
+    width: 72px;
+    height: 72px;
+    border-radius: 18px;
+    font-size: 1.45rem;
+  }
+
+  .detail-card__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
   }
 
   .detail-action-bar {
-    width: calc(100% - 32px);
-    max-width: 426px;
+    width: 100%;
+    max-width: none;
+  }
+
+  .form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    align-items: start;
+  }
+
+  .form-grid .switch-grid,
+  .form-grid .primary-button {
+    grid-column: 1 / -1;
+  }
+
+  .fab {
+    right: clamp(28px, 4vw, 56px);
+    bottom: clamp(28px, 4vw, 48px);
+  }
+}
+
+@media (min-width: 1200px) {
+  .app-shell {
+    --layout-inline: 40px;
+    --layout-top: 38px;
+    --layout-bottom: 56px;
+  }
+
+  .app-shell--screen-list {
+    --layout-max-width: min(1440px, calc(100vw - 96px));
+  }
+
+  .app-shell--screen-view,
+  .app-shell--screen-create,
+  .app-shell--screen-settings {
+    --layout-max-width: min(1040px, calc(100vw - 96px));
+  }
+
+  .client-list--table {
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    gap: 22px;
+  }
+
+  .client-row {
+    padding: 20px;
+  }
+
+  .detail-card__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
