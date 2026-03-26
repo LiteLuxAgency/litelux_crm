@@ -24,6 +24,7 @@ create table if not exists public.crm_clients (
   commission numeric(12,2) not null default 0,
   is_duplicate boolean not null default false,
   is_exclusive boolean not null default false,
+  is_archived boolean not null default false,
   link text not null default '',
   only_clients boolean not null default false,
   callback_at timestamptz,
@@ -46,6 +47,10 @@ create index if not exists crm_clients_callback_at_idx
 create index if not exists crm_clients_no_answer_idx
   on public.crm_clients (no_answer_marked_at)
   where no_answer = true and no_answer_marked_at is not null and no_answer_reminded_at is null;
+
+create index if not exists crm_clients_is_archived_idx
+  on public.crm_clients (is_archived)
+  where is_archived = true;
 
 create table if not exists public.crm_notification_log (
   id bigserial primary key,

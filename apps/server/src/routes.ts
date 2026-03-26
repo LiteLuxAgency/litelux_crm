@@ -11,6 +11,7 @@ const clientSchema = z.object({
   commission: z.number().nonnegative().nullable().optional(),
   isDuplicate: z.boolean().optional(),
   isExclusive: z.boolean().optional(),
+  isArchived: z.boolean().optional(),
   link: z.string().trim().optional(),
   onlyClients: z.boolean().optional(),
   callbackAt: z.string().trim().nullable().optional(),

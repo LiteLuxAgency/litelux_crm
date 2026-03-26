@@ -7,6 +7,7 @@ export type ClientRow = {
   commission: number | null;
   is_duplicate: boolean;
   is_exclusive: boolean;
+  is_archived: boolean;
   link: string;
   only_clients: boolean;
   callback_at: string | null;
@@ -37,6 +38,7 @@ export type ClientInput = {
   commission?: number | null;
   isDuplicate?: boolean;
   isExclusive?: boolean;
+  isArchived?: boolean;
   link?: string;
   onlyClients?: boolean;
   callbackAt?: string | null;

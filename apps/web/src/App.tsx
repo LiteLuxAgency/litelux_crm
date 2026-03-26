@@ -21,6 +21,7 @@ type Client = {
   no_answer_reminded_at?: string | null;
   notes: string;
   created_at: string;
+  is_archived?: boolean;
 };
 
 type Settings = {
@@ -181,6 +182,37 @@ function EditIcon() {
   );
 }
 
+function HomeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M4.5 10.5L12 4.5L19.5 10.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M6.5 9.8V19H17.5V9.8"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M10 19V13.5H14V19"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 function formatDate(value: string | null) {
   if (!value) {
     return "Не назначено";
@@ -304,25 +336,47 @@ function sortClientsByPriority(clients: Client[]): Client[] {
   });
 }
 
+function pluralize(value: number, one: string, few: string, many: string): string {
+  const mod10 = value % 10;
+  const mod100 = value % 100;
+
+  if (mod10 === 1 && mod100 !== 11) {
+    return one;
+  }
+
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) {
+    return few;
+  }
+
+  return many;
+}
+
 function formatDurationLabel(diffMs: number): string {
   const totalMinutes = Math.floor(diffMs / (60 * 1000));
   const totalHours = Math.floor(diffMs / (60 * 60 * 1000));
   const totalDays = Math.floor(diffMs / (24 * 60 * 60 * 1000));
+  const totalWeeks = Math.floor(diffMs / (7 * 24 * 60 * 60 * 1000));
   const totalMonths = Math.floor(diffMs / (30 * 24 * 60 * 60 * 1000));
 
   if (totalMonths >= 1) {
-    return `${totalMonths} мес.`;
+    return `${totalMonths} ${pluralize(totalMonths, "месяц", "месяца", "месяцев")}`;
+  }
+
+  if (totalWeeks >= 1) {
+    return `${totalWeeks} ${pluralize(totalWeeks, "неделя", "недели", "недель")}`;
   }
 
   if (totalDays >= 1) {
-    return `${totalDays} д.`;
+    return `${totalDays} ${pluralize(totalDays, "день", "дня", "дней")}`;
   }
 
   if (totalHours >= 1) {
-    return `${Math.max(1, totalHours)} ч.`;
+    const hours = Math.max(1, totalHours);
+    return `${hours} ${pluralize(hours, "час", "часа", "часов")}`;
   }
 
-  return `${Math.max(1, totalMinutes)} мин.`;
+  const minutes = Math.max(1, totalMinutes);
+  return `${minutes} ${pluralize(minutes, "минута", "минуты", "минут")}`;
 }
 
 function getClientDueLabel(client: Client, now = Date.now()): string | null {
@@ -337,7 +391,7 @@ function getClientDueLabel(client: Client, now = Date.now()): string | null {
     return `${formatDurationLabel(Math.abs(diffMs))} назад`;
   }
 
-  return `через ${formatDurationLabel(diffMs)}`;
+  return `осталось ${formatDurationLabel(diffMs)}`;
 }
 
 function formatBooleanLabel(value: boolean): string {
@@ -366,6 +420,8 @@ export default function App() {
   const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
   const selectedClient = clients.find((client) => client.id === selectedClientId) ?? null;
   const visibleClients = sortedClients.filter((client) => {
+    if (activeFilter !== "archive" && client.is_archived) return false;
+    if (activeFilter === "archive") return Boolean(client.is_archived);
     if (activeFilter === "tasks") {
       const tone = getClientPriorityTone(client);
       return tone === "danger" || tone === "warning";
@@ -542,6 +598,40 @@ export default function App() {
     setScreen("create");
   }
 
+  async function handleMarkArchived(client: Client) {
+    if (client.is_archived) {
+      return;
+    }
+
+    setSaving(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`${API_URL}/api/clients/${client.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ isArchived: true }),
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as
+          | { error?: string }
+          | null;
+        throw new Error(payload?.error || "Не удалось переместить клиента в архив");
+      }
+
+      await loadClients();
+      goToList();
+      setActiveFilter("archive");
+    } catch (archiveError) {
+      setError(archiveError instanceof Error ? archiveError.message : "Ошибка архивации");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   function goToList() {
     setScreen("list");
     setSelectedClientId(null);
@@ -633,87 +723,98 @@ export default function App() {
     if (screen === "view" && selectedClient) {
       return (
         <section className="sheet sheet--view">
-          <div className={`detail-card detail-card--${getClientPriorityTone(selectedClient)}`}>
-            <div className="detail-card__top">
-              <div className="detail-card__number">{selectedClient.client_number}</div>
-              <div className="detail-card__info">
-                <h2>{selectedClient.name}</h2>
-                <a href={`tel:${selectedClient.phone}`}>{selectedClient.phone}</a>
-                <div className="detail-card__address">{selectedClient.address || "Без адреса"}</div>
+          <div className="detail-view-shell">
+            <div className={`detail-card detail-card--${getClientPriorityTone(selectedClient)}`}>
+              <div className="detail-card__top">
+                <div className="detail-card__number">{selectedClient.client_number}</div>
+                <div className="detail-card__info">
+                  <h2>{selectedClient.name}</h2>
+                  <a href={`tel:${selectedClient.phone}`}>{selectedClient.phone}</a>
+                  <div className="detail-card__address">{selectedClient.address || "Без адреса"}</div>
+                </div>
               </div>
+
+              <div className="detail-card__meta">{getClientDueLabel(selectedClient) || "Без задачи"}</div>
+
+              <div className="detail-card__grid">
+                <div className="detail-item">
+                  <span>Комиссия</span>
+                  <strong>{selectedClient.commission ?? 0}%</strong>
+                </div>
+                <div className="detail-item">
+                  <span>Перезвонить</span>
+                  <strong>{selectedClient.callback_at ? formatDate(selectedClient.callback_at) : "Не назначено"}</strong>
+                </div>
+                <div className="detail-item">
+                  <span>Нет ответа</span>
+                  <strong>{formatBooleanLabel(selectedClient.no_answer)}</strong>
+                </div>
+                <div className="detail-item">
+                  <span>Только клиенты</span>
+                  <strong>{formatBooleanLabel(selectedClient.only_clients)}</strong>
+                </div>
+                <div className="detail-item">
+                  <span>Дубль</span>
+                  <strong>{formatBooleanLabel(selectedClient.is_duplicate)}</strong>
+                </div>
+                <div className="detail-item">
+                  <span>Эксклюзив</span>
+                  <strong>{formatBooleanLabel(selectedClient.is_exclusive)}</strong>
+                </div>
+                <div className="detail-item">
+                  <span>Ссылка</span>
+                  <strong>{selectedClient.link ? "Есть" : "Нет"}</strong>
+                </div>
+              </div>
+
+              {selectedClient.notes ? (
+                <div className="detail-card__notes">
+                  <span>Комментарий</span>
+                  <strong>{selectedClient.notes}</strong>
+                </div>
+              ) : null}
             </div>
 
-            <div className="detail-card__meta">{getClientDueLabel(selectedClient) || "Без задачи"}</div>
-
-            <div className="detail-card__grid">
-              <div className="detail-item">
-                <span>Комиссия</span>
-                <strong>{selectedClient.commission ?? 0}%</strong>
-              </div>
-              <div className="detail-item">
-                <span>Перезвонить</span>
-                <strong>{selectedClient.callback_at ? formatDate(selectedClient.callback_at) : "Не назначено"}</strong>
-              </div>
-              <div className="detail-item">
-                <span>Нет ответа</span>
-                <strong>{formatBooleanLabel(selectedClient.no_answer)}</strong>
-              </div>
-              <div className="detail-item">
-                <span>Только клиенты</span>
-                <strong>{formatBooleanLabel(selectedClient.only_clients)}</strong>
-              </div>
-              <div className="detail-item">
-                <span>Дубль</span>
-                <strong>{formatBooleanLabel(selectedClient.is_duplicate)}</strong>
-              </div>
-              <div className="detail-item">
-                <span>Эксклюзив</span>
-                <strong>{formatBooleanLabel(selectedClient.is_exclusive)}</strong>
-              </div>
-              <div className="detail-item">
-                <span>Ссылка</span>
-                <strong>{selectedClient.link ? "Есть" : "Нет"}</strong>
-              </div>
+            <div className="detail-action-bar">
+              <button
+                type="button"
+                className="detail-action"
+                onClick={() => window.open(`tel:${selectedClient.phone}`)}
+                aria-label="Позвонить"
+              >
+                <PhoneIcon />
+              </button>
+              <button
+                type="button"
+                className="detail-action"
+                onClick={() => {
+                  if (selectedClient.link) {
+                    openExternalLink(selectedClient.link);
+                  }
+                }}
+                disabled={!selectedClient.link}
+                aria-label="Открыть ссылку"
+              >
+                <ExternalLinkIcon />
+              </button>
+              <button
+                type="button"
+                className="detail-action"
+                onClick={() => openEditForm(selectedClient)}
+                aria-label="Редактировать"
+              >
+                <EditIcon />
+              </button>
+              <button
+                type="button"
+                className="detail-action"
+                onClick={() => void handleMarkArchived(selectedClient)}
+                disabled={Boolean(selectedClient.is_archived) || saving}
+                aria-label="Сдано"
+              >
+                <HomeIcon />
+              </button>
             </div>
-
-            {selectedClient.notes ? (
-              <div className="detail-card__notes">
-                <span>Комментарий</span>
-                <strong>{selectedClient.notes}</strong>
-              </div>
-            ) : null}
-          </div>
-
-          <div className="detail-action-bar">
-            <button
-              type="button"
-              className="detail-action"
-              onClick={() => window.open(`tel:${selectedClient.phone}`)}
-              aria-label="Позвонить"
-            >
-              <PhoneIcon />
-            </button>
-            <button
-              type="button"
-              className="detail-action"
-              onClick={() => {
-                if (selectedClient.link) {
-                  openExternalLink(selectedClient.link);
-                }
-              }}
-              disabled={!selectedClient.link}
-              aria-label="Открыть ссылку"
-            >
-              <ExternalLinkIcon />
-            </button>
-            <button
-              type="button"
-              className="detail-action"
-              onClick={() => openEditForm(selectedClient)}
-              aria-label="Редактировать"
-            >
-              <EditIcon />
-            </button>
           </div>
         </section>
       );
@@ -1062,16 +1163,7 @@ export default function App() {
         >
           +
         </button>
-      ) : (
-        <button
-          type="button"
-          className="fab fab--secondary"
-          onClick={goToList}
-          aria-label="Вернуться назад"
-        >
-          <ArrowLeftIcon />
-        </button>
-      )}
+      ) : null}
     </main>
   );
 }

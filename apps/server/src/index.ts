@@ -9,6 +9,28 @@ import { ReminderScheduler } from "./scheduler.js";
 import { createRoutes } from "./routes.js";
 import { TelegramManager } from "./telegram-manager.js";
 
+function isPollingConflict(reason: unknown): boolean {
+  if (!reason || typeof reason !== "object") {
+    return false;
+  }
+
+  const maybeResponse = "response" in reason ? reason.response : null;
+  const errorCode =
+    maybeResponse && typeof maybeResponse === "object" && "error_code" in maybeResponse
+      ? maybeResponse.error_code
+      : null;
+  const description =
+    maybeResponse && typeof maybeResponse === "object" && "description" in maybeResponse
+      ? String(maybeResponse.description)
+      : "";
+
+  return (
+    errorCode === 409 ||
+    description.toLowerCase().includes("terminated by other getupdates request") ||
+    description.toLowerCase().includes("conflict")
+  );
+}
+
 async function main(): Promise<void> {
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
@@ -81,6 +103,17 @@ async function main(): Promise<void> {
     scheduler.stop();
     await telegramManager.stop();
     process.exit(0);
+  });
+
+  process.on("unhandledRejection", (reason) => {
+    if (isPollingConflict(reason)) {
+      console.warn(
+        "Пойман конфликт getUpdates от другой копии бота. Локальный сервер продолжает работать без приема команд.",
+      );
+      return;
+    }
+
+    console.error("Необработанное отклонение промиса:", reason);
   });
 }
 

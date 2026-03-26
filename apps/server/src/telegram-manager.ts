@@ -42,10 +42,33 @@ function formatReminder(client: ClientRow, kind: ReminderKind): string {
   return [title, "", formatClientCard(client)].join("\n");
 }
 
+function isTelegramPollingConflict(error: unknown): boolean {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const maybeResponse = "response" in error ? error.response : null;
+  const errorCode =
+    maybeResponse && typeof maybeResponse === "object" && "error_code" in maybeResponse
+      ? maybeResponse.error_code
+      : null;
+  const description =
+    maybeResponse && typeof maybeResponse === "object" && "description" in maybeResponse
+      ? String(maybeResponse.description)
+      : "";
+
+  return (
+    errorCode === 409 ||
+    description.toLowerCase().includes("terminated by other getupdates request") ||
+    description.toLowerCase().includes("conflict")
+  );
+}
+
 export class TelegramManager {
   private bot: Telegraf | null = null;
   private activeToken: string | null = null;
   private activeChatId: string | null = null;
+  private pollingBlocked = false;
 
   constructor(private readonly repository: Repository) {}
 
@@ -63,6 +86,16 @@ export class TelegramManager {
 
     const tokenChanged = token !== this.activeToken;
     const chatChanged = chatId !== this.activeChatId;
+
+    if (tokenChanged) {
+      this.pollingBlocked = false;
+    }
+
+    if (this.pollingBlocked && !tokenChanged) {
+      this.activeToken = token;
+      this.activeChatId = chatId || null;
+      return;
+    }
 
     if (!this.bot || tokenChanged) {
       await this.stop();
@@ -85,6 +118,15 @@ export class TelegramManager {
           this.bot = null;
           this.activeToken = null;
           throw new Error("Неверный токен Telegram-бота");
+        }
+
+        if (isTelegramPollingConflict(error)) {
+          console.warn(
+            "Прием команд Telegram-бота уже запущен в другой копии приложения. Локально оставляю только отправку уведомлений.",
+          );
+          this.pollingBlocked = true;
+          this.bot = null;
+          return;
         }
 
         console.error("Не удалось запустить прием команд Telegram-бота, но отправка уведомлений останется доступной:", error);
@@ -115,6 +157,7 @@ export class TelegramManager {
       }
       this.bot = null;
     }
+    this.pollingBlocked = false;
     this.activeToken = null;
   }
 

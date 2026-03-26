@@ -137,6 +137,9 @@ export class Repository {
     return (data ?? []).flatMap((row) => {
       const client = row as ClientRow;
       const reminders: Array<{ client: ClientRow; kind: ReminderKind }> = [];
+      if (client.is_archived) {
+        return reminders;
+      }
       const callbackAtMs = client.callback_at ? new Date(client.callback_at).getTime() : Number.NaN;
       const noAnswerMarkedAtMs = client.no_answer_marked_at ? new Date(client.no_answer_marked_at).getTime() : Number.NaN;
 
@@ -206,6 +209,9 @@ export class Repository {
 
     if (input.isExclusive !== undefined) payload.is_exclusive = normalizeBoolean(input.isExclusive);
     else if (requireAll) payload.is_exclusive = false;
+
+    if (input.isArchived !== undefined) payload.is_archived = normalizeBoolean(input.isArchived);
+    else if (requireAll) payload.is_archived = false;
 
     if (input.link !== undefined) payload.link = normalizeText(input.link);
     else if (requireAll) payload.link = "";
