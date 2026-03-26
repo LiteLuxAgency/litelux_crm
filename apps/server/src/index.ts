@@ -31,6 +31,21 @@ function isPollingConflict(reason: unknown): boolean {
   );
 }
 
+function isTelegramNetworkError(reason: unknown): boolean {
+  const text = reason instanceof Error ? reason.stack || reason.message : String(reason ?? "");
+  const normalized = text.toLowerCase();
+
+  return (
+    normalized.includes("fetch failed") ||
+    normalized.includes("connecttimeouterror") ||
+    normalized.includes("und_err_connect_timeout") ||
+    normalized.includes("etimedout") ||
+    normalized.includes("econnreset") ||
+    normalized.includes("enotfound") ||
+    normalized.includes("eai_again")
+  );
+}
+
 async function main(): Promise<void> {
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
@@ -110,6 +125,11 @@ async function main(): Promise<void> {
       console.warn(
         "Пойман конфликт getUpdates от другой копии бота. Локальный сервер продолжает работать без приема команд.",
       );
+      return;
+    }
+
+    if (isTelegramNetworkError(reason)) {
+      console.warn("Поймана временная сетевая ошибка при обращении к Telegram API. Сервер продолжает работу.");
       return;
     }
 

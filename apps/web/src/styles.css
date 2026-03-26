@@ -35,13 +35,17 @@ body,
   margin: 0;
   height: 100%;
   min-height: 100%;
+  min-height: 100svh;
+  background-color: #110d0b;
   background:
     radial-gradient(circle at top, rgba(230, 166, 85, 0.24), transparent 28%),
     linear-gradient(180deg, #241913 0%, #16110e 56%, #110d0b 100%);
 }
 
 body {
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  min-height: 100svh;
   min-height: 100dvh;
   overscroll-behavior: none;
 }
@@ -61,8 +65,11 @@ a {
 
 .app-shell {
   position: relative;
-  height: 100dvh;
+  min-height: 100svh;
   min-height: 100dvh;
+  background:
+    radial-gradient(circle at top, rgba(230, 166, 85, 0.24), transparent 28%),
+    linear-gradient(180deg, #241913 0%, #16110e 56%, #110d0b 100%);
   overflow: hidden;
 }
 
@@ -82,7 +89,7 @@ a {
   position: relative;
   z-index: 1;
   width: min(100%, 500px);
-  height: 100dvh;
+  min-height: 100svh;
   min-height: 100dvh;
   margin: 0 auto;
   padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px 0;
@@ -148,7 +155,7 @@ a {
 }
 
 .brand-mark--main {
-  transform: translateY(-14px);
+  transform: translate(3px, -16px);
 }
 
 .topbar__spacer {
@@ -166,7 +173,7 @@ a {
 }
 
 .topbar--main .topbar__settings-button {
-  transform: translate(-10px, 10px);
+  transform: translate(-8px, -4px);
 }
 
 .icon-button,
@@ -237,6 +244,12 @@ a {
 
 .sheet--list {
   min-height: calc(100dvh - env(safe-area-inset-top, 0px) - 16px);
+  padding: 0 0 118px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
 .sheet__header {
@@ -868,6 +881,17 @@ a {
       0 0 0 6px rgba(255, 188, 102, 0.08);
   }
 
+  .app-shell--list {
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+  }
+
+  .app-shell--list .app-shell__backdrop {
+    display: none;
+  }
+
   .app-shell__content,
   .sheet--list,
   .sheet--view {
@@ -960,7 +984,7 @@ a {
   }
 
   .brand-mark--main {
-    transform: translateY(-16px);
+    transform: translate(4px, -18px);
   }
 
   .icon-button {
@@ -980,7 +1004,7 @@ a {
   }
 
   .topbar--main .topbar__settings-button {
-    transform: translate(-8px, 12px);
+    transform: translate(-6px, -4px);
   }
 
   .filter-row {
@@ -1125,7 +1149,7 @@ a {
   }
 
   .brand-mark--main {
-    transform: translateY(-13px);
+    transform: translate(3px, -15px);
   }
 
   .client-row {
@@ -1167,7 +1191,7 @@ a {
   }
 
   .topbar--main .topbar__settings-button {
-    transform: translate(-6px, 11px);
+    transform: translate(-4px, -3px);
   }
 }
 
@@ -1193,7 +1217,7 @@ a {
   }
 
   .brand-mark--main {
-    transform: translateY(-17px);
+    transform: translate(4px, -19px);
   }
 
   .client-row {
@@ -1205,6 +1229,6 @@ a {
   }
 
   .topbar--main .topbar__settings-button {
-    transform: translate(-10px, 11px);
+    transform: translate(-8px, -4px);
   }
 }

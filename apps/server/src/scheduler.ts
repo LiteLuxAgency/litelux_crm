@@ -14,9 +14,13 @@ export class ReminderScheduler {
   start(): void {
     if (this.timer) return;
     this.timer = setInterval(() => {
-      void this.tick();
+      void this.tick().catch((error) => {
+        console.error("Ошибка планировщика напоминаний:", error);
+      });
     }, this.intervalMs);
-    void this.tick();
+    void this.tick().catch((error) => {
+      console.error("Ошибка планировщика напоминаний:", error);
+    });
   }
 
   stop(): void {

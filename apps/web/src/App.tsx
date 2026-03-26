@@ -1162,7 +1162,9 @@ export default function App() {
 
   return (
     <main
-      className={`app-shell ${isTelegram ? "app-shell--telegram" : ""}`}
+      className={`app-shell ${isTelegram ? "app-shell--telegram" : ""} ${
+        screen === "list" ? "app-shell--list" : ""
+      }`}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}

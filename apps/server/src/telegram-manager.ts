@@ -64,6 +64,21 @@ function isTelegramPollingConflict(error: unknown): boolean {
   );
 }
 
+function isTelegramNetworkError(error: unknown): boolean {
+  const text = error instanceof Error ? error.stack || error.message : String(error ?? "");
+  const normalized = text.toLowerCase();
+
+  return (
+    normalized.includes("fetch failed") ||
+    normalized.includes("connecttimeouterror") ||
+    normalized.includes("und_err_connect_timeout") ||
+    normalized.includes("etimedout") ||
+    normalized.includes("econnreset") ||
+    normalized.includes("enotfound") ||
+    normalized.includes("eai_again")
+  );
+}
+
 export class TelegramManager {
   private bot: Telegraf | null = null;
   private activeToken: string | null = null;
@@ -129,6 +144,14 @@ export class TelegramManager {
           return;
         }
 
+        if (isTelegramNetworkError(error)) {
+          console.warn(
+            "Telegram API временно недоступен. Продолжаю работу без активного соединения с ботом, повторная синхронизация выполнится позже.",
+          );
+          this.bot = null;
+          return;
+        }
+
         console.error("Не удалось запустить прием команд Telegram-бота, но отправка уведомлений останется доступной:", error);
         this.bot = null;
       }
@@ -141,7 +164,16 @@ export class TelegramManager {
     this.activeChatId = chatId || null;
 
     if (this.bot && chatChanged) {
-      await this.bot.telegram.setMyCommands([]);
+      try {
+        await this.bot.telegram.setMyCommands([]);
+      } catch (error) {
+        if (isTelegramNetworkError(error)) {
+          console.warn("Не удалось обновить команды Telegram-бота из-за сетевой ошибки. Попробую позже.");
+          return;
+        }
+
+        throw error;
+      }
     }
   }
 
@@ -181,26 +213,53 @@ export class TelegramManager {
   private registerHandlers(): void {
     if (!this.bot) return;
 
+    this.bot.catch((error) => {
+      if (isTelegramNetworkError(error)) {
+        console.warn("Сетевая ошибка в обработчике Telegram-бота. Команда будет проигнорирована до следующей попытки.");
+        return;
+      }
+
+      console.error("Ошибка обработчика Telegram-бота:", error);
+    });
+
     this.bot.start(async (ctx) => {
-      const chatId = String(ctx.chat.id);
-      const username = ctx.botInfo.username ?? "";
-      await this.repository.updateSettings({
-        telegramChatId: chatId,
-        telegramEnabled: true,
-        telegramBotUsername: username,
-      });
-      this.activeChatId = chatId;
-      await ctx.reply(`Чат сохранен для уведомлений.\nБот: @${username || "неизвестно"}`);
+      try {
+        const chatId = String(ctx.chat.id);
+        const username = ctx.botInfo.username ?? "";
+        await this.repository.updateSettings({
+          telegramChatId: chatId,
+          telegramEnabled: true,
+          telegramBotUsername: username,
+        });
+        this.activeChatId = chatId;
+        await ctx.reply(`Чат сохранен для уведомлений.\nБот: @${username || "неизвестно"}`);
+      } catch (error) {
+        if (isTelegramNetworkError(error)) {
+          console.warn("Не удалось сохранить настройки Telegram-бота из-за сетевой ошибки Supabase.");
+          return;
+        }
+
+        console.error("Ошибка команды /start Telegram-бота:", error);
+      }
     });
 
     this.bot.command("status", async (ctx) => {
-      await ctx.reply(
-        [
-          "Статус CRM-бота:",
-          `Активен: ${this.bot ? "да" : "нет"}`,
-          `Чат уведомлений: ${this.activeChatId || "не задан"}`,
-        ].join("\n"),
-      );
+      try {
+        await ctx.reply(
+          [
+            "Статус CRM-бота:",
+            `Активен: ${this.bot ? "да" : "нет"}`,
+            `Чат уведомлений: ${this.activeChatId || "не задан"}`,
+          ].join("\n"),
+        );
+      } catch (error) {
+        if (isTelegramNetworkError(error)) {
+          console.warn("Не удалось ответить на команду /status из-за сетевой ошибки Telegram API.");
+          return;
+        }
+
+        console.error("Ошибка команды /status Telegram-бота:", error);
+      }
     });
   }
 
