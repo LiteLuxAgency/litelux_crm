@@ -116,6 +116,11 @@ a {
   border-bottom: 1px solid rgba(255, 225, 191, 0.1);
 }
 
+.topbar--main {
+  align-items: start;
+  grid-template-columns: 34px 1fr 48px;
+}
+
 .topbar h1 {
   margin: 6px 0 0;
   font-size: 1.8rem;
@@ -142,9 +147,26 @@ a {
   backdrop-filter: blur(16px) saturate(135%);
 }
 
+.brand-mark--main {
+  transform: translateY(-14px);
+}
+
 .topbar__spacer {
   width: 48px;
   height: 48px;
+}
+
+.topbar__spacer--main {
+  width: 34px;
+  height: 1px;
+}
+
+.topbar__settings-button {
+  justify-self: end;
+}
+
+.topbar--main .topbar__settings-button {
+  transform: translate(-10px, 10px);
 }
 
 .icon-button,
@@ -877,7 +899,7 @@ a {
     --phone-action-offset: calc(env(safe-area-inset-bottom, 0px) + 18px);
     --phone-action-inset: 4px;
     --phone-fab-right: 22px;
-    --phone-fab-bottom: calc(env(safe-area-inset-bottom, 0px) + 42px);
+    --phone-fab-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
   }
 
   .app-shell__content {
@@ -924,6 +946,10 @@ a {
     padding-bottom: 12px;
   }
 
+  .topbar--main {
+    grid-template-columns: 28px 1fr var(--phone-control-size);
+  }
+
   .topbar h1 {
     font-size: 1.5rem;
   }
@@ -931,6 +957,10 @@ a {
   .brand-mark {
     padding: 9px 16px;
     font-size: 0.88rem;
+  }
+
+  .brand-mark--main {
+    transform: translateY(-16px);
   }
 
   .icon-button {
@@ -943,6 +973,14 @@ a {
     width: calc(var(--phone-control-size) - 6px);
     height: calc(var(--phone-control-size) - 6px);
     border-radius: 11px;
+  }
+
+  .topbar__spacer--main {
+    width: 28px;
+  }
+
+  .topbar--main .topbar__settings-button {
+    transform: translate(-8px, 12px);
   }
 
   .filter-row {
@@ -1077,13 +1115,17 @@ a {
     --phone-action-offset: calc(env(safe-area-inset-bottom, 0px) + 14px);
     --phone-action-inset: 2px;
     --phone-fab-right: 18px;
-    --phone-fab-bottom: calc(env(safe-area-inset-bottom, 0px) + 36px);
+    --phone-fab-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
   }
 
   .brand-mark {
     padding: 8px 14px;
     font-size: 0.82rem;
     letter-spacing: 0.06em;
+  }
+
+  .brand-mark--main {
+    transform: translateY(-13px);
   }
 
   .client-row {
@@ -1123,6 +1165,10 @@ a {
   .detail-action {
     height: 48px;
   }
+
+  .topbar--main .topbar__settings-button {
+    transform: translate(-6px, 11px);
+  }
 }
 
 @media (min-width: 431px) and (max-width: 767px) {
@@ -1138,12 +1184,16 @@ a {
     --phone-action-offset: calc(env(safe-area-inset-bottom, 0px) + 20px);
     --phone-action-inset: 6px;
     --phone-fab-right: 28px;
-    --phone-fab-bottom: calc(env(safe-area-inset-bottom, 0px) + 48px);
+    --phone-fab-bottom: calc(env(safe-area-inset-bottom, 0px) + 22px);
   }
 
   .brand-mark {
     padding: 10px 18px;
     font-size: 0.94rem;
+  }
+
+  .brand-mark--main {
+    transform: translateY(-17px);
   }
 
   .client-row {
@@ -1152,5 +1202,9 @@ a {
 
   .detail-action {
     height: 56px;
+  }
+
+  .topbar--main .topbar__settings-button {
+    transform: translate(-10px, 11px);
   }
 }

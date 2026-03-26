@@ -416,7 +416,7 @@ export default function App() {
   const [savingSettings, setSavingSettings] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formState, setFormState] = useState<ClientFormState>(initialFormState);
-  const [activeFilter, setActiveFilter] = useState<ClientFilter>("inWork");
+  const [activeFilter, setActiveFilter] = useState<ClientFilter>("tasks");
   const sortedClients = sortClientsByPriority(clients);
   const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
   const swipeDeltaRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -658,22 +658,28 @@ export default function App() {
   }
 
   function renderMainHero(showSettings = false) {
-    return (
-      <div className="topbar topbar--compact">
-        <button
-          type="button"
-          className="icon-button icon-button--compact"
-          onClick={handleTopBack}
-          aria-label="Назад"
-        >
-          <ArrowLeftIcon />
-        </button>
+    const isMainMenu = showSettings;
 
-        <span className="brand-mark">LiteLux CRM</span>
+    return (
+      <div className={`topbar topbar--compact ${isMainMenu ? "topbar--main" : ""}`}>
+        {isMainMenu ? (
+          <span className="topbar__spacer topbar__spacer--main" aria-hidden="true" />
+        ) : (
+          <button
+            type="button"
+            className="icon-button icon-button--compact"
+            onClick={handleTopBack}
+            aria-label="Назад"
+          >
+            <ArrowLeftIcon />
+          </button>
+        )}
+
+        <span className={`brand-mark ${isMainMenu ? "brand-mark--main" : ""}`}>LiteLux CRM</span>
         {showSettings ? (
           <button
             type="button"
-            className="icon-button"
+            className="icon-button topbar__settings-button"
             onClick={() => setScreen("settings")}
             aria-label="Настройки"
           >
