@@ -213,6 +213,16 @@ function HomeIcon() {
   );
 }
 
+function MoreIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="6.5" cy="12" r="1.7" fill="currentColor" />
+      <circle cx="12" cy="12" r="1.7" fill="currentColor" />
+      <circle cx="17.5" cy="12" r="1.7" fill="currentColor" />
+    </svg>
+  );
+}
+
 function formatDate(value: string | null) {
   if (!value) {
     return "Не назначено";
@@ -417,6 +427,8 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [formState, setFormState] = useState<ClientFormState>(initialFormState);
   const [activeFilter, setActiveFilter] = useState<ClientFilter>("tasks");
+  const [activeMenuClientId, setActiveMenuClientId] = useState<string | null>(null);
+  const [confirmDeleteClientId, setConfirmDeleteClientId] = useState<string | null>(null);
   const sortedClients = sortClientsByPriority(clients);
   const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
   const swipeDeltaRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -583,6 +595,8 @@ export default function App() {
   }
 
   function openCreateForm() {
+    setActiveMenuClientId(null);
+    setConfirmDeleteClientId(null);
     setEditingClientId(null);
     setSelectedClientId(null);
     setFormState(initialFormState);
@@ -590,11 +604,15 @@ export default function App() {
   }
 
   function openView(client: Client) {
+    setActiveMenuClientId(null);
+    setConfirmDeleteClientId(null);
     setSelectedClientId(client.id);
     setScreen("view");
   }
 
   function openEditForm(client: Client) {
+    setActiveMenuClientId(null);
+    setConfirmDeleteClientId(null);
     setSelectedClientId(client.id);
     setEditingClientId(client.id);
     setFormState(clientToFormState(client));
@@ -636,10 +654,43 @@ export default function App() {
   }
 
   function goToList() {
+    setActiveMenuClientId(null);
+    setConfirmDeleteClientId(null);
     setScreen("list");
     setSelectedClientId(null);
     setEditingClientId(null);
     setFormState(initialFormState);
+  }
+
+  async function handleDeleteClient(client: Client) {
+    setSaving(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`${API_URL}/api/clients/${client.id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as
+          | { error?: string }
+          | null;
+        throw new Error(payload?.error || "Не удалось удалить клиента");
+      }
+
+      setActiveMenuClientId(null);
+      setConfirmDeleteClientId(null);
+
+      if (selectedClientId === client.id || editingClientId === client.id) {
+        goToList();
+      }
+
+      await loadClients();
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : "Ошибка удаления");
+    } finally {
+      setSaving(false);
+    }
   }
 
   function handleTopBack() {
@@ -800,41 +851,26 @@ export default function App() {
             <div className="detail-action-bar">
               <button
                 type="button"
-                className="detail-action"
+                className="detail-action detail-action--wide"
                 onClick={() => window.open(`tel:${selectedClient.phone}`)}
                 aria-label="Позвонить"
               >
                 <PhoneIcon />
+                <span>Позвонить</span>
               </button>
               <button
                 type="button"
-                className="detail-action"
+                className="detail-action detail-action--wide"
                 onClick={() => {
                   if (selectedClient.link) {
                     openExternalLink(selectedClient.link);
                   }
                 }}
                 disabled={!selectedClient.link}
-                aria-label="Открыть ссылку"
+                aria-label="Перейти"
               >
                 <ExternalLinkIcon />
-              </button>
-              <button
-                type="button"
-                className="detail-action"
-                onClick={() => openEditForm(selectedClient)}
-                aria-label="Редактировать"
-              >
-                <EditIcon />
-              </button>
-              <button
-                type="button"
-                className="detail-action"
-                onClick={() => void handleMarkArchived(selectedClient)}
-                disabled={Boolean(selectedClient.is_archived) || saving}
-                aria-label="Сдано"
-              >
-                <HomeIcon />
+                <span>Перейти</span>
               </button>
             </div>
           </div>
@@ -1142,6 +1178,78 @@ export default function App() {
               key={client.id}
               onClick={() => openView(client)}
             >
+              <button
+                type="button"
+                className="client-row__menu-trigger"
+                aria-label="Действия с клиентом"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setConfirmDeleteClientId((current) =>
+                    current === client.id ? null : current,
+                  );
+                  setActiveMenuClientId((current) => (current === client.id ? null : client.id));
+                }}
+              >
+                <MoreIcon />
+              </button>
+
+              {activeMenuClientId === client.id ? (
+                <div
+                  className="client-row__menu"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                  }}
+                >
+                  {confirmDeleteClientId === client.id ? (
+                    <div className="client-row__menu-confirm">
+                      <strong>Удалить клиента?</strong>
+                      <div className="client-row__menu-confirm-actions">
+                        <button
+                          type="button"
+                          className="client-row__menu-item client-row__menu-item--danger"
+                          onClick={() => void handleDeleteClient(client)}
+                          disabled={saving}
+                        >
+                          Да
+                        </button>
+                        <button
+                          type="button"
+                          className="client-row__menu-item"
+                          onClick={() => setConfirmDeleteClientId(null)}
+                        >
+                          Нет
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        className="client-row__menu-item"
+                        onClick={() => openEditForm(client)}
+                      >
+                        Редактировать
+                      </button>
+                      <button
+                        type="button"
+                        className="client-row__menu-item"
+                        onClick={() => void handleMarkArchived(client)}
+                        disabled={Boolean(client.is_archived) || saving}
+                      >
+                        В архив
+                      </button>
+                      <button
+                        type="button"
+                        className="client-row__menu-item client-row__menu-item--danger"
+                        onClick={() => setConfirmDeleteClientId(client.id)}
+                      >
+                        Удалить
+                      </button>
+                    </>
+                  )}
+                </div>
+              ) : null}
+
               <div className="client-row__id">{client.client_number}</div>
               <div className="client-row__body">
                 <div className="client-row__main">
