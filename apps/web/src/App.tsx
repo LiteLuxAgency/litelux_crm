@@ -1983,7 +1983,14 @@ export default function App() {
                     </div>
 
                     <div className="client-row__location">
-                      <div className="client-row__address-line">{client.address || "Без адреса"}</div>
+                      <div className="client-row__location-top">
+                        <div className="client-row__address-line">{client.address || "Без адреса"}</div>
+                        <div className={`client-row__meta client-row__meta--${clientTone}`}>
+                          {client.callback_at
+                            ? `Перезвонить ${clientDueLabel || ""}`.trim()
+                            : clientDueLabel}
+                        </div>
+                      </div>
                       {client.complex_name ? (
                         <div className="client-row__complex">ЖК: {client.complex_name}</div>
                       ) : null}
@@ -1999,10 +2006,6 @@ export default function App() {
                       {client.objects?.length ? (
                         <span className="badge">Объекты: {client.objects.length}</span>
                       ) : null}
-                    </div>
-
-                    <div className={`client-row__meta client-row__meta--${clientTone}`}>
-                      {client.callback_at ? `Перезвонить ${clientDueLabel || ""}`.trim() : clientDueLabel}
                     </div>
                   </div>
                 </div>

@@ -34,6 +34,7 @@ body,
 #root {
   margin: 0;
   height: 100%;
+  overflow: hidden;
   min-height: 100%;
   min-height: 100svh;
   background-color: #110d0b;
@@ -44,7 +45,7 @@ body,
 
 body {
   overflow-x: hidden;
-  overflow-y: auto;
+  overflow-y: hidden;
   min-height: 100svh;
   min-height: 100dvh;
   overscroll-behavior: none;
@@ -69,6 +70,8 @@ a {
   --layout-inline: 16px;
   --layout-top: calc(env(safe-area-inset-top, 0px) + 16px);
   --layout-bottom: 0px;
+  height: 100svh;
+  height: 100dvh;
   min-height: 100svh;
   min-height: 100dvh;
   background:
@@ -93,12 +96,14 @@ a {
   position: relative;
   z-index: 1;
   width: min(100%, var(--layout-max-width));
+  height: 100%;
   min-height: 100svh;
   min-height: 100dvh;
   margin: 0 auto;
   padding: var(--layout-top) var(--layout-inline) var(--layout-bottom);
   overflow-y: auto;
   overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
 }
 
@@ -332,6 +337,7 @@ a {
   display: flex;
   gap: 12px;
   align-items: center;
+  margin-top: -10px;
   margin-bottom: 16px;
   padding: 2px 0 8px;
   background: transparent;
@@ -404,6 +410,7 @@ a {
 }
 
 .client-list--table {
+  justify-items: stretch;
   gap: 12px;
 }
 
@@ -431,6 +438,7 @@ a {
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
+  width: 100%;
   gap: 14px;
   align-items: start;
   padding: 14px;
@@ -587,6 +595,13 @@ a {
   gap: 4px;
 }
 
+.client-row__location-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: start;
+}
+
 .client-row__label {
   color: rgba(255, 225, 191, 0.58);
   font-size: 0.78rem;
@@ -607,8 +622,8 @@ a {
 
 .client-row__footer {
   display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
+  align-items: flex-start;
+  justify-content: flex-start;
   gap: 12px;
 }
 
@@ -622,7 +637,7 @@ a {
   color: var(--accent-strong);
   font-size: 0.84rem;
   text-align: right;
-  margin-top: -2px;
+  white-space: nowrap;
 }
 
 .client-row--danger .client-row__meta,
@@ -1453,15 +1468,11 @@ a {
 }
 
 @media (min-width: 768px) {
-  body {
-    overflow-y: auto;
-  }
-
   .app-shell {
     --layout-inline: clamp(28px, 4vw, 56px);
     --layout-top: clamp(28px, 4vw, 44px);
     --layout-bottom: clamp(36px, 4vw, 56px);
-    overflow: visible;
+    overflow: hidden;
   }
 
   .app-shell__backdrop {
@@ -1470,9 +1481,10 @@ a {
   }
 
   .app-shell__content {
+    height: 100%;
     min-height: 100svh;
     min-height: 100dvh;
-    overflow: visible;
+    overflow-y: auto;
   }
 
   .app-shell--screen-list {
@@ -1547,6 +1559,7 @@ a {
   .filter-strip {
     gap: 16px;
     padding-top: 0;
+    margin-top: -14px;
   }
 
   .filter-row {
@@ -1555,11 +1568,13 @@ a {
   }
 
   .client-list--table {
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    grid-template-columns: 1fr;
+    justify-items: center;
     gap: 18px;
   }
 
   .client-row {
+    max-width: 1100px;
     padding: 18px;
     border-radius: 22px;
   }
@@ -1570,6 +1585,10 @@ a {
 
   .client-row__main strong {
     font-size: 1.18rem;
+  }
+
+  .client-row__meta {
+    font-size: 0.9rem;
   }
 
   .detail-view-shell {
@@ -1668,11 +1687,12 @@ a {
   }
 
   .client-list--table {
-    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    grid-template-columns: 1fr;
     gap: 22px;
   }
 
   .client-row {
+    max-width: 1020px;
     padding: 20px;
   }
 
@@ -1784,6 +1804,10 @@ a {
     padding: 0 0 4px;
   }
 
+  .filter-strip {
+    margin-top: -6px;
+  }
+
   .filter-chip {
     min-height: var(--phone-chip-height);
     padding: 0 12px;
@@ -1829,6 +1853,11 @@ a {
     gap: 8px;
   }
 
+  .client-row__location-top {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
   .client-row__main a,
   .client-row__address-line {
     font-size: 0.9rem;
@@ -1837,6 +1866,7 @@ a {
   .client-row__meta {
     font-size: 0.8rem;
     text-align: left;
+    white-space: normal;
   }
 
   .client-card__top,
