@@ -329,29 +329,30 @@ a {
   position: sticky;
   top: 0;
   z-index: 7;
-  display: grid;
-  grid-template-columns: auto 1px minmax(0, 1fr);
+  display: flex;
   gap: 12px;
   align-items: center;
   margin-bottom: 16px;
-  padding: 10px 0 8px;
-  background:
-    linear-gradient(180deg, rgba(29, 22, 18, 0.94), rgba(29, 22, 18, 0.8) 76%, transparent);
-  backdrop-filter: blur(18px);
+  padding: 2px 0 8px;
+  background: transparent;
+  backdrop-filter: none;
 }
 
 .filter-strip__primary {
   display: flex;
   align-items: center;
+  flex: 0 0 auto;
 }
 
 .filter-strip__divider {
+  flex: 0 0 auto;
   width: 1px;
   height: 34px;
   background: rgba(255, 225, 191, 0.16);
 }
 
 .filter-row {
+  flex: 1 1 auto;
   display: flex;
   flex-wrap: nowrap;
   gap: 10px;
@@ -528,6 +529,15 @@ a {
     rgba(24, 17, 14, 0.92);
   backdrop-filter: blur(18px) saturate(140%);
   box-shadow: 0 18px 36px rgba(0, 0, 0, 0.26);
+}
+
+.client-row__menu-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  border: 0;
+  background: transparent;
+  padding: 0;
 }
 
 .client-row__menu-item {
@@ -1034,6 +1044,15 @@ a {
 
 .field select {
   appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, rgba(255, 231, 204, 0.78) 50%),
+    linear-gradient(135deg, rgba(255, 231, 204, 0.78) 50%, transparent 50%);
+  background-position:
+    calc(100% - 22px) calc(50% - 2px),
+    calc(100% - 16px) calc(50% - 2px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+  padding-right: 38px;
 }
 
 .field--phone,
@@ -1069,14 +1088,73 @@ a {
 }
 
 .toggle input {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  width: 42px;
+  height: 24px;
+  margin: 0;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 225, 191, 0.16);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.18);
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.toggle input::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
   width: 18px;
   height: 18px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 248, 239, 0.95), rgba(255, 232, 205, 0.84));
+  box-shadow:
+    0 4px 10px rgba(0, 0, 0, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  transition: transform 0.18s ease;
+}
+
+.toggle input:checked {
+  border-color: rgba(255, 195, 114, 0.4);
+  background:
+    linear-gradient(180deg, rgba(255, 214, 160, 0.26), rgba(255, 174, 92, 0.14)),
+    rgba(242, 173, 95, 0.16);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 0 18px rgba(242, 173, 95, 0.12);
+}
+
+.toggle input:checked::after {
+  transform: translateX(18px);
+}
+
+.toggle span {
+  flex: 1 1 auto;
 }
 
 .toggle--compact {
   min-height: 52px;
   padding: 0 14px;
   white-space: nowrap;
+}
+
+.toggle--compact input {
+  width: 38px;
+  height: 22px;
+}
+
+.toggle--compact input::after {
+  width: 16px;
+  height: 16px;
+}
+
+.toggle--compact input:checked::after {
+  transform: translateX(16px);
 }
 
 .toggle--card {
@@ -1203,6 +1281,9 @@ a {
   font-size: 1.9rem;
   font-weight: 500;
   line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   backdrop-filter: blur(18px) saturate(138%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.05),
@@ -1219,7 +1300,7 @@ a {
   --fab-size: 54px;
   --fab-gap: 10px;
   position: fixed;
-  right: clamp(24px, 4vw, 48px);
+  right: clamp(32px, 4vw, 56px);
   bottom: clamp(24px, 4vw, 40px);
   z-index: 6;
   display: inline-flex;
@@ -1330,6 +1411,9 @@ a {
   border-radius: 999px;
   color: #fff7ec;
   font-size: 1.8rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .fab--open {
@@ -1521,7 +1605,7 @@ a {
   }
 
   .fab-menu {
-    right: clamp(20px, 3vw, 42px);
+    right: clamp(28px, 3vw, 50px);
     bottom: clamp(28px, 4vw, 48px);
   }
 
@@ -1709,7 +1793,7 @@ a {
 
   .fab-menu {
     --fab-size: 50px;
-    right: calc(var(--phone-fab-right) - 6px);
+    right: calc(var(--phone-fab-right) + 4px);
     bottom: var(--phone-fab-bottom);
   }
 
@@ -1968,7 +2052,7 @@ a {
   }
 
   .fab-menu {
-    right: var(--phone-fab-right);
+    right: calc(var(--phone-fab-right) + 4px);
     bottom: var(--phone-fab-bottom);
   }
 }

@@ -80,6 +80,7 @@ type ClientFormState = {
   isProxyPhone: boolean;
   commission: string;
   link: string;
+  statusMode: ClientStatusMode;
   isDuplicate: boolean;
   isExclusive: boolean;
   onlyClients: boolean;
@@ -101,6 +102,7 @@ type SettingsFormState = {
 type ClientPriorityTone = "normal" | "success" | "warning" | "danger";
 type ClientFilter = "tasks" | "inWork" | "duplicate" | "callback" | "noAnswer" | "onlyClients" | "archive";
 type ClientDueKind = "callback" | "noAnswer";
+type ClientStatusMode = "none" | "duplicate" | "exclusive" | "noAnswer" | "onlyClients" | "callback";
 
 const API_URL = import.meta.env.VITE_API_URL || window.location.origin;
 
@@ -139,6 +141,7 @@ const initialFormState: ClientFormState = {
   isProxyPhone: false,
   commission: "",
   link: "",
+  statusMode: "none",
   isDuplicate: false,
   isExclusive: false,
   onlyClients: false,
@@ -156,6 +159,15 @@ const initialSettingsState: SettingsFormState = {
   listActionReactionEnabled: true,
   listActionCreateEnabled: true,
 };
+
+const STATUS_MODE_OPTIONS: Array<{ value: ClientStatusMode; label: string }> = [
+  { value: "none", label: "Без статуса" },
+  { value: "duplicate", label: "Дубль" },
+  { value: "exclusive", label: "Эксклюзив" },
+  { value: "noAnswer", label: "Нет ответа" },
+  { value: "onlyClients", label: "Только клиенты" },
+  { value: "callback", label: "Перезвонить" },
+];
 
 function ArrowLeftIcon() {
   return (
@@ -421,6 +433,15 @@ function normalizeClientObjects(items: PropertyObject[] | null | undefined): Pro
   }));
 }
 
+function getClientStatusMode(client: Client): ClientStatusMode {
+  if (client.is_duplicate) return "duplicate";
+  if (client.is_exclusive) return "exclusive";
+  if (client.no_answer) return "noAnswer";
+  if (client.only_clients) return "onlyClients";
+  if (client.callback_at) return "callback";
+  return "none";
+}
+
 function clientToFormState(client: Client): ClientFormState {
   return {
     name: client.name,
@@ -430,6 +451,7 @@ function clientToFormState(client: Client): ClientFormState {
     isProxyPhone: Boolean(client.is_proxy_phone),
     commission: client.commission !== null ? String(client.commission) : "",
     link: client.link ?? "",
+    statusMode: getClientStatusMode(client),
     isDuplicate: client.is_duplicate,
     isExclusive: client.is_exclusive,
     onlyClients: client.only_clients,
@@ -596,6 +618,17 @@ function getClientDueLabel(client: Client, now = Date.now()): string | null {
   }
 
   return `через ${formatDurationLabel(diffMs)}`;
+}
+
+function applyStatusMode(mode: ClientStatusMode, callbackAt = "") {
+  return {
+    statusMode: mode,
+    isDuplicate: mode === "duplicate",
+    isExclusive: mode === "exclusive",
+    onlyClients: mode === "onlyClients",
+    noAnswer: mode === "noAnswer",
+    callbackAt: mode === "callback" ? callbackAt : "",
+  };
 }
 
 function formatBooleanLabel(value: boolean): string {
@@ -1025,19 +1058,15 @@ export default function App() {
     }
   }
 
-  function handleDuplicateToggle(nextValue: boolean) {
+  function handleStatusModeChange(mode: ClientStatusMode) {
     setFormState((current) => ({
       ...current,
-      isDuplicate: nextValue,
-      isExclusive: nextValue ? false : current.isExclusive,
-    }));
-  }
-
-  function handleExclusiveToggle(nextValue: boolean) {
-    setFormState((current) => ({
-      ...current,
-      isExclusive: nextValue,
-      isDuplicate: nextValue ? false : current.isDuplicate,
+      ...applyStatusMode(
+        mode,
+        mode === "callback"
+          ? current.callbackAt || toDateTimeLocalValue(new Date().toISOString())
+          : current.callbackAt,
+      ),
     }));
   }
 
@@ -1589,20 +1618,6 @@ export default function App() {
             </label>
 
             <label className="field">
-              <span className="field__label">Перезвонить</span>
-              <input
-                type="datetime-local"
-                value={formState.callbackAt}
-                onChange={(event) =>
-                  setFormState((current) => ({
-                    ...current,
-                    callbackAt: event.target.value,
-                  }))
-                }
-              />
-            </label>
-
-            <label className="field">
               <span className="field__label">Комментарий</span>
               <input
                 value={formState.notes}
@@ -1613,53 +1628,37 @@ export default function App() {
               />
             </label>
 
-            <div className="switch-grid">
-              <label className="toggle">
-                <input
-                  type="checkbox"
-                  checked={formState.isDuplicate}
-                  onChange={(event) => handleDuplicateToggle(event.target.checked)}
-                />
-                <span>Дубль</span>
-              </label>
+            <label className="field field--full">
+              <span className="field__label">Статус</span>
+              <select
+                value={formState.statusMode}
+                onChange={(event) =>
+                  handleStatusModeChange(event.target.value as ClientStatusMode)
+                }
+              >
+                {STATUS_MODE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-              <label className="toggle">
+            {formState.statusMode === "callback" ? (
+              <label className="field field--full">
+                <span className="field__label">Дата перезвона</span>
                 <input
-                  type="checkbox"
-                  checked={formState.isExclusive}
-                  onChange={(event) => handleExclusiveToggle(event.target.checked)}
-                />
-                <span>Эксклюзив</span>
-              </label>
-
-              <label className="toggle">
-                <input
-                  type="checkbox"
-                  checked={formState.onlyClients}
+                  type="date"
+                  value={formState.callbackAt ? formState.callbackAt.slice(0, 10) : ""}
                   onChange={(event) =>
                     setFormState((current) => ({
                       ...current,
-                      onlyClients: event.target.checked,
+                      callbackAt: event.target.value ? `${event.target.value}T00:00` : "",
                     }))
                   }
                 />
-                <span>Только клиенты</span>
               </label>
-
-              <label className="toggle">
-                <input
-                  type="checkbox"
-                  checked={formState.noAnswer}
-                  onChange={(event) =>
-                    setFormState((current) => ({
-                      ...current,
-                      noAnswer: event.target.checked,
-                    }))
-                  }
-                />
-                <span>Нет ответа</span>
-              </label>
-            </div>
+            ) : null}
 
             <section className="subform-section">
               <div className="subform-section__header">
@@ -1881,6 +1880,15 @@ export default function App() {
                 : "Снимите фильтр или переключитесь на другой."}
             </p>
           </div>
+        ) : null}
+
+        {activeMenuClientId ? (
+          <button
+            type="button"
+            className="client-row__menu-overlay"
+            aria-label="Закрыть меню карточки"
+            onClick={closeFloatingUi}
+          />
         ) : null}
 
         <div className="client-list client-list--table">
