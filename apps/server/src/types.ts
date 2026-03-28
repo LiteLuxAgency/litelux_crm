@@ -22,12 +22,14 @@ export type ParkingSpotInput = {
 
 export type PropertyObjectRow = {
   id: string;
+  kind: "object" | "parking";
   title: string;
   notes: string;
 };
 
 export type PropertyObjectInput = {
   id?: string;
+  kind?: "object" | "parking";
   title?: string;
   notes?: string;
 };
@@ -45,6 +47,8 @@ export type ClientRow = {
   is_exclusive: boolean;
   is_archived: boolean;
   link: string;
+  preferences: string;
+  passport_data: string;
   only_clients: boolean;
   callback_at: string | null;
   callback_reminded_at: string | null;
@@ -82,7 +86,8 @@ export type ClientInput = {
   isDuplicate?: boolean;
   isExclusive?: boolean;
   isArchived?: boolean;
-  link?: string;
+  preferences?: string;
+  passportData?: string;
   onlyClients?: boolean;
   callbackAt?: string | null;
   noAnswer?: boolean;

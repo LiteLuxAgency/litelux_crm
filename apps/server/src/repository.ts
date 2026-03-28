@@ -78,6 +78,7 @@ function normalizeObjects(value: PropertyObjectInput[] | unknown): PropertyObjec
     const entry = item && typeof item === "object" ? item : {};
     return {
       id: normalizeText((entry as { id?: unknown }).id, crypto.randomUUID()),
+      kind: (entry as { kind?: unknown }).kind === "parking" ? "parking" : "object",
       title: normalizeText((entry as { title?: unknown }).title),
       notes: normalizeText((entry as { notes?: unknown }).notes),
     };
@@ -242,6 +243,10 @@ export class Repository {
     const nextComplexName =
       input.complexName !== undefined ? normalizeText(input.complexName) : current?.complex_name;
     const nextPhone = input.phone !== undefined ? normalizeText(input.phone) : current?.phone;
+    const nextPreferences =
+      input.preferences !== undefined ? normalizeText(input.preferences) : current?.preferences;
+    const nextPassportData =
+      input.passportData !== undefined ? normalizeText(input.passportData) : current?.passport_data;
 
     if (requireAll) {
       if (!nextName) throw new Error("Поле name обязательно");
@@ -273,8 +278,11 @@ export class Repository {
     if (input.isArchived !== undefined) payload.is_archived = normalizeBoolean(input.isArchived);
     else if (requireAll) payload.is_archived = false;
 
-    if (input.link !== undefined) payload.link = normalizeText(input.link);
-    else if (requireAll) payload.link = "";
+    if (nextPreferences !== undefined) payload.preferences = nextPreferences;
+    else if (requireAll) payload.preferences = "";
+
+    if (nextPassportData !== undefined) payload.passport_data = nextPassportData;
+    else if (requireAll) payload.passport_data = "";
 
     if (input.onlyClients !== undefined) payload.only_clients = normalizeBoolean(input.onlyClients);
     else if (requireAll) payload.only_clients = false;

@@ -17,6 +17,7 @@ const parkingSpotSchema = z.object({
 
 const propertyObjectSchema = z.object({
   id: z.string().trim().optional(),
+  kind: z.enum(["object", "parking"]).optional(),
   title: z.string().trim().optional(),
   notes: z.string().trim().optional(),
 });
@@ -31,7 +32,8 @@ const clientSchema = z.object({
   isDuplicate: z.boolean().optional(),
   isExclusive: z.boolean().optional(),
   isArchived: z.boolean().optional(),
-  link: z.string().trim().optional(),
+  preferences: z.string().trim().optional(),
+  passportData: z.string().trim().optional(),
   onlyClients: z.boolean().optional(),
   callbackAt: z.string().trim().nullable().optional(),
   noAnswer: z.boolean().optional(),

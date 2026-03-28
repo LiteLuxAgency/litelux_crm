@@ -31,6 +31,8 @@ create table if not exists public.crm_clients (
   is_exclusive boolean not null default false,
   is_archived boolean not null default false,
   link text not null default '',
+  preferences text not null default '',
+  passport_data text not null default '',
   only_clients boolean not null default false,
   callback_at timestamptz,
   callback_reminded_at timestamptz,

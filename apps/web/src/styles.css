@@ -52,7 +52,9 @@ body {
 }
 
 button,
-input {
+input,
+textarea,
+select {
   font: inherit;
 }
 
@@ -164,7 +166,7 @@ a {
 }
 
 .brand-mark--main {
-  transform: translate(5px, -18px);
+  transform: translate(8px, -18px);
 }
 
 .topbar__spacer {
@@ -768,6 +770,11 @@ a {
   font-size: 0.95rem;
 }
 
+.detail-card__status {
+  color: var(--accent-strong);
+  font-size: 0.9rem;
+}
+
 .detail-card__meta {
   color: var(--accent-strong);
   font-size: 0.84rem;
@@ -805,6 +812,11 @@ a {
     linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01));
   border: 1px solid rgba(255, 225, 191, 0.1);
   backdrop-filter: blur(16px) saturate(128%);
+}
+
+.detail-item--wide {
+  align-items: flex-start;
+  flex-direction: column;
 }
 
 .detail-item--danger {
@@ -873,9 +885,46 @@ a {
   backdrop-filter: blur(16px) saturate(128%);
 }
 
+.detail-card__notes--nested {
+  margin-top: 10px;
+}
+
 .detail-related {
   display: grid;
   gap: 10px;
+}
+
+.detail-disclosure {
+  border: 1px solid rgba(255, 225, 191, 0.1);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 10% 14%, rgba(255, 196, 120, 0.06), transparent 16%),
+    linear-gradient(135deg, rgba(58, 43, 35, 0.82), rgba(30, 23, 20, 0.8) 60%, rgba(22, 18, 16, 0.84)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01));
+  overflow: hidden;
+}
+
+.detail-disclosure summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  cursor: pointer;
+  list-style: none;
+  color: #fff7ec;
+}
+
+.detail-disclosure summary::-webkit-details-marker {
+  display: none;
+}
+
+.detail-disclosure summary strong {
+  color: var(--accent-strong);
+}
+
+.detail-disclosure .detail-related__list {
+  padding: 0 14px 14px;
 }
 
 .detail-related__title {
@@ -913,7 +962,7 @@ a {
   bottom: 0;
   z-index: 8;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 10px;
   margin-top: 16px;
   padding: 12px;
@@ -1039,7 +1088,8 @@ a {
 }
 
 .field input,
-.field select {
+.field select,
+.field textarea {
   width: 100%;
   min-height: 52px;
   padding: 14px 16px;
@@ -1057,6 +1107,10 @@ a {
   color: rgba(255, 248, 239, 0.4);
 }
 
+.field textarea::placeholder {
+  color: rgba(255, 248, 239, 0.4);
+}
+
 .field select {
   appearance: none;
   background-image:
@@ -1068,6 +1122,11 @@ a {
   background-size: 6px 6px, 6px 6px;
   background-repeat: no-repeat;
   padding-right: 38px;
+}
+
+.field textarea {
+  min-height: 132px;
+  resize: vertical;
 }
 
 .field--phone,
@@ -1217,6 +1276,64 @@ a {
   background: rgba(255, 255, 255, 0.03);
 }
 
+.accordion-stack {
+  display: grid;
+  gap: 12px;
+  grid-column: 1 / -1;
+}
+
+.accordion-card {
+  border: 1px solid rgba(255, 225, 191, 0.1);
+  border-radius: 22px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02)),
+    rgba(255, 255, 255, 0.03);
+  overflow: hidden;
+}
+
+.accordion-card__button {
+  width: 100%;
+  min-height: 58px;
+  padding: 0 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: transparent;
+  color: #fff7ec;
+  font-weight: 700;
+}
+
+.accordion-card__button strong {
+  color: var(--accent-strong);
+}
+
+.accordion-card__panel {
+  padding: 0 14px 14px;
+}
+
+.object-add-menu {
+  position: relative;
+}
+
+.object-add-menu__panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 4;
+  display: grid;
+  gap: 6px;
+  min-width: 180px;
+  padding: 8px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 225, 191, 0.12);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.02)),
+    rgba(24, 17, 14, 0.92);
+  backdrop-filter: blur(18px) saturate(140%);
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.26);
+}
+
 .settings-section__title,
 .subform-section__header h3 {
   margin: 0;
@@ -1327,7 +1444,7 @@ a {
 .search-flyout {
   position: absolute;
   right: calc(var(--fab-size) + 14px);
-  bottom: calc((var(--fab-size) + var(--fab-gap)) * 2 + var(--search-keyboard-offset, 0px));
+  bottom: calc((var(--fab-size) + var(--fab-gap)) * 2);
   width: min(420px, calc(100vw - 124px));
   opacity: 0;
   pointer-events: none;
@@ -1522,7 +1639,7 @@ a {
   }
 
   .brand-mark--main {
-    transform: translateY(-14px);
+    transform: translate(6px, -14px);
   }
 
   .topbar--main .topbar__settings-button {
@@ -1775,7 +1892,7 @@ a {
   }
 
   .brand-mark--main {
-    transform: translate(6px, -20px);
+    transform: translate(9px, -20px);
   }
 
   .icon-button {
@@ -1989,7 +2106,7 @@ a {
   }
 
   .brand-mark--main {
-    transform: translate(5px, -17px);
+    transform: translate(8px, -17px);
   }
 
   .client-row {
@@ -2062,7 +2179,7 @@ a {
   }
 
   .brand-mark--main {
-    transform: translate(6px, -21px);
+    transform: translate(9px, -21px);
   }
 
   .client-row {

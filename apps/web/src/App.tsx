@@ -2,6 +2,7 @@ import { CSSProperties, FormEvent, TouchEvent, startTransition, useEffect, useRe
 import { getTelegramWebApp, initTelegramApp, isTelegramMiniApp, openExternalLink } from "./lib/telegram";
 
 type Screen = "list" | "view" | "create" | "settings";
+type CreatePanel = "preferences" | "objects" | "passport" | "comment" | null;
 
 type ParkingSpot = {
   id: string;
@@ -16,6 +17,7 @@ type ParkingSpot = {
 
 type PropertyObject = {
   id: string;
+  kind: "object" | "parking";
   title: string;
   notes: string;
 };
@@ -30,6 +32,8 @@ type Client = {
   is_proxy_phone: boolean;
   commission: number | null;
   link: string;
+  preferences: string;
+  passport_data: string;
   is_duplicate: boolean;
   is_exclusive: boolean;
   only_clients: boolean;
@@ -68,6 +72,7 @@ type ParkingSpotFormState = {
 
 type PropertyObjectFormState = {
   id: string;
+  kind: "object" | "parking";
   title: string;
   notes: string;
 };
@@ -79,13 +84,14 @@ type ClientFormState = {
   phone: string;
   isProxyPhone: boolean;
   commission: string;
-  link: string;
   statusMode: ClientStatusMode;
   isDuplicate: boolean;
   isExclusive: boolean;
   onlyClients: boolean;
   noAnswer: boolean;
   callbackAt: string;
+  preferences: string;
+  passportData: string;
   notes: string;
   parkingSpots: ParkingSpotFormState[];
   objects: PropertyObjectFormState[];
@@ -126,6 +132,7 @@ function createParkingSpotFormState(): ParkingSpotFormState {
 function createPropertyObjectFormState(): PropertyObjectFormState {
   return {
     id: createLocalId(),
+    kind: "object",
     title: "",
     notes: "",
   };
@@ -140,13 +147,14 @@ const initialFormState: ClientFormState = {
   phone: "",
   isProxyPhone: false,
   commission: "",
-  link: "",
   statusMode: "none",
   isDuplicate: false,
   isExclusive: false,
   onlyClients: false,
   noAnswer: false,
   callbackAt: "",
+  preferences: "",
+  passportData: "",
   notes: "",
   parkingSpots: [],
   objects: [],
@@ -428,6 +436,7 @@ function normalizeClientParkingSpots(items: ParkingSpot[] | null | undefined): P
 function normalizeClientObjects(items: PropertyObject[] | null | undefined): PropertyObjectFormState[] {
   return (items ?? []).map((item) => ({
     id: item.id || createLocalId(),
+    kind: item.kind === "parking" ? "parking" : "object",
     title: item.title ?? "",
     notes: item.notes ?? "",
   }));
@@ -450,13 +459,14 @@ function clientToFormState(client: Client): ClientFormState {
     phone: client.phone,
     isProxyPhone: Boolean(client.is_proxy_phone),
     commission: client.commission !== null ? String(client.commission) : "",
-    link: client.link ?? "",
     statusMode: getClientStatusMode(client),
     isDuplicate: client.is_duplicate,
     isExclusive: client.is_exclusive,
     onlyClients: client.only_clients,
     noAnswer: client.no_answer,
     callbackAt: toDateTimeLocalValue(client.callback_at),
+    preferences: client.preferences ?? "",
+    passportData: client.passport_data ?? "",
     notes: client.notes ?? "",
     parkingSpots: normalizeClientParkingSpots(client.parking_spots),
     objects: normalizeClientObjects(client.objects),
@@ -631,8 +641,19 @@ function applyStatusMode(mode: ClientStatusMode, callbackAt = "") {
   };
 }
 
-function formatBooleanLabel(value: boolean): string {
-  return value ? "Да" : "Нет";
+function getClientStatusLabel(client: Client): string | null {
+  const mode = getClientStatusMode(client);
+  if (mode === "none") return null;
+  if (mode === "duplicate") return "Дубль";
+  if (mode === "exclusive") return "Эксклюзив";
+  if (mode === "noAnswer") return "Нет ответа";
+  if (mode === "onlyClients") return "Только клиенты";
+  if (mode === "callback") return client.callback_at ? `Перезвонить ${getClientDueLabel(client) ?? ""}`.trim() : "Перезвонить";
+  return null;
+}
+
+function getObjectKindLabel(kind: "object" | "parking") {
+  return kind === "parking" ? "Машиноместо" : "Объект";
 }
 
 export default function App() {
@@ -663,6 +684,8 @@ export default function App() {
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchKeyboardOffset, setSearchKeyboardOffset] = useState(0);
+  const [openCreatePanel, setOpenCreatePanel] = useState<CreatePanel>("preferences");
+  const [isObjectMenuOpen, setIsObjectMenuOpen] = useState(false);
   const sortedClients = sortClientsByPriority(clients);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
@@ -676,7 +699,11 @@ export default function App() {
         client.name,
         client.phone,
         client.address,
+        client.complex_name,
+        client.preferences,
+        client.passport_data,
         client.notes,
+        client.objects.map((item) => `${item.title} ${item.notes}`).join(" "),
         client.client_number.toString(),
       ]
         .join(" ")
@@ -890,29 +917,19 @@ export default function App() {
         callbackAt: formState.callbackAt
           ? new Date(formState.callbackAt).toISOString()
           : null,
+        preferences: formState.preferences,
+        passportData: formState.passportData,
         notes: formState.notes,
-        parkingSpots: formState.parkingSpots.map((item) => ({
-          id: item.id,
-          address: item.address,
-          price: toNumberOrNull(item.price),
-          commission: toNumberOrNull(item.commission),
-          utilitiesIncluded: item.utilitiesIncluded,
-          deposit: toNumberOrNull(item.deposit),
-          area: toNumberOrNull(item.area),
-          floor: item.floor,
-        })),
+        parkingSpots: [],
         objects: formState.objects.map((item) => ({
           id: item.id,
+          kind: item.kind,
           title: item.title,
           notes: item.notes,
         })),
       };
 
       payload.commission = toNumberOrNull(formState.commission);
-
-      if (formState.link.trim()) {
-        payload.link = formState.link.trim();
-      }
 
       const isEditing = Boolean(editingClientId);
       const response = await fetch(
@@ -955,6 +972,8 @@ export default function App() {
     setEditingClientId(null);
     setSelectedClientId(null);
     setFormState(initialFormState);
+    setOpenCreatePanel("preferences");
+    setIsObjectMenuOpen(false);
     setScreen("create");
   }
 
@@ -971,6 +990,8 @@ export default function App() {
     setSelectedClientId(client.id);
     setEditingClientId(client.id);
     setFormState(clientToFormState(client));
+    setOpenCreatePanel("preferences");
+    setIsObjectMenuOpen(false);
     setScreen("create");
   }
 
@@ -1025,6 +1046,8 @@ export default function App() {
     setScreen("list");
     setSelectedClientId(null);
     setEditingClientId(null);
+    setOpenCreatePanel("preferences");
+    setIsObjectMenuOpen(false);
     setFormState(initialFormState);
   }
 
@@ -1097,11 +1120,20 @@ export default function App() {
     }));
   }
 
-  function addPropertyObject() {
+  function addPropertyObject(kind: "object" | "parking") {
     setFormState((current) => ({
       ...current,
-      objects: [...current.objects, createPropertyObjectFormState()],
+      objects: [
+        ...current.objects,
+        {
+          ...createPropertyObjectFormState(),
+          kind,
+          title: kind === "parking" ? "Машиноместо" : "",
+        },
+      ],
     }));
+    setIsObjectMenuOpen(false);
+    setOpenCreatePanel("objects");
   }
 
   function updatePropertyObject(
@@ -1159,22 +1191,7 @@ export default function App() {
         )}
 
         <span className={`brand-mark ${isMainMenu ? "brand-mark--main" : ""}`}>LiteLux CRM</span>
-        {showSettings ? (
-          <button
-            type="button"
-            className="icon-button topbar__settings-button"
-            onClick={() => {
-              closeFloatingUi();
-              setShowSearch(false);
-              setScreen("settings");
-            }}
-            aria-label="Настройки"
-          >
-            <SettingsIcon />
-          </button>
-        ) : (
-          <span className="topbar__spacer" />
-        )}
+        <span className="topbar__spacer" />
       </div>
     );
   }
@@ -1229,13 +1246,12 @@ export default function App() {
 
   function renderContent() {
     if (screen === "view" && selectedClient) {
-      const selectedClientTone = getClientPriorityTone(selectedClient);
-      const selectedClientDueLabel = getClientDueLabel(selectedClient);
+      const selectedClientStatus = getClientStatusLabel(selectedClient);
 
       return (
         <section className="sheet sheet--view">
           <div className="detail-view-shell">
-            <div className={`detail-card detail-card--${selectedClientTone}`}>
+            <div className="detail-card detail-card--plain">
               <button
                 type="button"
                 className="detail-card__edit"
@@ -1253,16 +1269,13 @@ export default function App() {
                 </div>
                 <div className="detail-card__info detail-card__info--location">
                   <div className="detail-card__address">{selectedClient.address || "Без адреса"}</div>
+                  {selectedClientStatus ? (
+                    <div className="detail-card__status">{selectedClientStatus}</div>
+                  ) : null}
                   {selectedClient.complex_name ? (
                     <div className="detail-card__complex">ЖК: {selectedClient.complex_name}</div>
                   ) : null}
                 </div>
-              </div>
-
-              <div className={`detail-card__meta detail-card__meta--${selectedClientTone}`}>
-                {selectedClient.callback_at
-                  ? `Перезвонить ${selectedClientDueLabel || ""}`.trim()
-                  : selectedClientDueLabel || "Без задачи"}
               </div>
 
               <div className="detail-card__grid">
@@ -1270,30 +1283,12 @@ export default function App() {
                   <span>Комиссия</span>
                   <strong>{selectedClient.commission ?? 0}%</strong>
                 </div>
-                <div className={`detail-item detail-item--due detail-item--${selectedClientTone}`}>
-                  <span>Перезвонить</span>
-                  <strong>{selectedClient.callback_at ? formatDate(selectedClient.callback_at) : "Не назначено"}</strong>
-                </div>
-                <div className="detail-item">
-                  <span>Нет ответа</span>
-                  <strong>{formatBooleanLabel(selectedClient.no_answer)}</strong>
-                </div>
-                <div className="detail-item">
-                  <span>Только клиенты</span>
-                  <strong>{formatBooleanLabel(selectedClient.only_clients)}</strong>
-                </div>
-                <div className="detail-item">
-                  <span>Дубль</span>
-                  <strong>{formatBooleanLabel(selectedClient.is_duplicate)}</strong>
-                </div>
-                <div className="detail-item">
-                  <span>Эксклюзив</span>
-                  <strong>{formatBooleanLabel(selectedClient.is_exclusive)}</strong>
-                </div>
-                <div className="detail-item">
-                  <span>Ссылка</span>
-                  <strong>{selectedClient.link ? "Есть" : "Нет"}</strong>
-                </div>
+                {selectedClient.preferences ? (
+                  <div className="detail-item detail-item--wide">
+                    <span>Предпочтения</span>
+                    <strong>{selectedClient.preferences}</strong>
+                  </div>
+                ) : null}
               </div>
 
               {selectedClient.notes ? (
@@ -1303,41 +1298,35 @@ export default function App() {
                 </div>
               ) : null}
 
-              {selectedClient.parking_spots?.length ? (
-                <div className="detail-related">
-                  <div className="detail-related__title">Машиноместа</div>
-                  <div className="detail-related__list">
-                    {selectedClient.parking_spots.map((item, index) => (
-                      <div className="detail-related__card" key={item.id || `${item.address}-${index}`}>
-                        <strong>Машиноместо #{index + 1}</strong>
-                        <span>{item.address || "Адрес не указан"}</span>
-                        <span>
-                          Цена: {item.price ?? "нет"} | Комиссия: {item.commission ?? "нет"}%
-                        </span>
-                        <span>
-                          К/У {item.utilitiesIncluded ? "включены" : "отдельно"} | Залог: {item.deposit ?? "нет"}
-                        </span>
-                        <span>
-                          Площадь: {item.area ?? "нет"} | Этаж: {item.floor || "нет"}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-
               {selectedClient.objects?.length ? (
-                <div className="detail-related">
-                  <div className="detail-related__title">Объекты</div>
+                <details className="detail-disclosure" open>
+                  <summary>
+                    <span>Объекты</span>
+                    <strong>{selectedClient.objects.length}</strong>
+                  </summary>
                   <div className="detail-related__list">
                     {selectedClient.objects.map((item, index) => (
                       <div className="detail-related__card" key={item.id || `${item.title}-${index}`}>
-                        <strong>{item.title || `Объект #${index + 1}`}</strong>
-                        <span>{item.notes || "Описание пока не заполнено"}</span>
+                        <strong>
+                          {getObjectKindLabel(item.kind === "parking" ? "parking" : "object")} {index + 1}
+                        </strong>
+                        <span>{item.title || "Без названия"}</span>
+                        {item.notes ? <span>{item.notes}</span> : null}
                       </div>
                     ))}
                   </div>
-                </div>
+                </details>
+              ) : null}
+
+              {selectedClient.passport_data ? (
+                <details className="detail-disclosure">
+                  <summary>
+                    <span>Паспортные данные</span>
+                  </summary>
+                  <div className="detail-card__notes detail-card__notes--nested">
+                    <strong>{selectedClient.passport_data}</strong>
+                  </div>
+                </details>
               ) : null}
             </div>
 
@@ -1345,25 +1334,13 @@ export default function App() {
               <button
                 type="button"
                 className="detail-action detail-action--wide"
-                onClick={() => window.open(`tel:${selectedClient.phone}`)}
+                onClick={() => {
+                  window.location.href = `tel:${selectedClient.phone}`;
+                }}
                 aria-label="Позвонить"
               >
                 <PhoneIcon />
                 <span>Позвонить</span>
-              </button>
-              <button
-                type="button"
-                className="detail-action detail-action--wide"
-                onClick={() => {
-                  if (selectedClient.link) {
-                    openExternalLink(selectedClient.link);
-                  }
-                }}
-                disabled={!selectedClient.link}
-                aria-label="Перейти"
-              >
-                <ExternalLinkIcon />
-                <span>Перейти</span>
               </button>
             </div>
           </div>
@@ -1372,98 +1349,16 @@ export default function App() {
     }
 
     if (screen === "settings") {
-      const connectLink = settings.telegramBotUsername
-        ? `https://t.me/${settings.telegramBotUsername}`
-        : null;
-
       return (
         <section className="sheet">
           <div className="sheet__header">
             <div>
-              <p className="eyebrow">Настройки</p>
-              <h2>Telegram и меню списка</h2>
+              <p className="eyebrow">Telegram</p>
+              <h2>Подключение бота</h2>
             </div>
           </div>
 
-          <form className="settings-grid" onSubmit={handleSaveSettings}>
-            <label className="field">
-              <span className="field__label">Токен Telegram-бота</span>
-              <input
-                value={settingsForm.telegramBotToken}
-                onChange={(event) =>
-                  setSettingsForm((current) => ({
-                    ...current,
-                    telegramBotToken: event.target.value,
-                  }))
-                }
-                placeholder={
-                  settings.telegramBotTokenPresent
-                    ? "Токен уже сохранён, сюда можно вставить новый"
-                    : "123456:ABC..."
-                }
-              />
-            </label>
-
-            <label className="toggle">
-              <input
-                type="checkbox"
-                checked={settingsForm.telegramEnabled}
-                onChange={(event) =>
-                  setSettingsForm((current) => ({
-                    ...current,
-                    telegramEnabled: event.target.checked,
-                  }))
-                }
-              />
-              <span>Включить Telegram-бота</span>
-            </label>
-
-            <div className="settings-section">
-              <div className="settings-section__title">Меню списка</div>
-
-              <label className="toggle">
-                <input
-                  type="checkbox"
-                  checked={settingsForm.listActionSearchEnabled}
-                  onChange={(event) =>
-                    setSettingsForm((current) => ({
-                      ...current,
-                      listActionSearchEnabled: event.target.checked,
-                    }))
-                  }
-                />
-                <span>Поиск внизу справа</span>
-              </label>
-
-              <label className="toggle">
-                <input
-                  type="checkbox"
-                  checked={settingsForm.listActionReactionEnabled}
-                  onChange={(event) =>
-                    setSettingsForm((current) => ({
-                      ...current,
-                      listActionReactionEnabled: event.target.checked,
-                    }))
-                  }
-                />
-                <span>Смайлик настроек</span>
-              </label>
-
-              <label className="toggle">
-                <input
-                  type="checkbox"
-                  checked={settingsForm.listActionCreateEnabled}
-                  onChange={(event) =>
-                    setSettingsForm((current) => ({
-                      ...current,
-                      listActionCreateEnabled: event.target.checked,
-                    }))
-                  }
-                />
-                <span>Добавление клиента</span>
-              </label>
-            </div>
-
+          <div className="settings-grid">
             <div className="status-card">
               <span
                 className={`status-dot ${
@@ -1479,29 +1374,15 @@ export default function App() {
                 <p>
                   {settings.telegramChatId
                     ? `chat_id: ${settings.telegramChatId}`
-                    : "После сохранения настроек откройте бота и нажмите Start"}
+                    : "Подключение останется для теста, параметры потом поменяешь вручную"}
                 </p>
               </div>
             </div>
 
-            {connectLink ? (
-              <button
-                type="button"
-                className="secondary-button"
-                onClick={() => openExternalLink(connectLink)}
-              >
-                Открыть бота
-              </button>
-            ) : (
-              <div className="hint-card">
-                Сначала сохраните валидный токен бота. После этого здесь появится ссылка.
-              </div>
-            )}
-
-            <button type="submit" className="primary-button" disabled={savingSettings}>
-              {savingSettings ? "Сохраняю..." : "Сохранить настройки"}
-            </button>
-          </form>
+            <div className="hint-card">
+              Экран настроек упрощён. Быстрые кнопки меню больше не настраиваются отсюда.
+            </div>
+          </div>
         </section>
       );
     }
@@ -1606,28 +1487,6 @@ export default function App() {
               </select>
             </label>
 
-            <label className="field">
-              <span className="field__label">Ссылка</span>
-              <input
-                value={formState.link}
-                onChange={(event) =>
-                  setFormState((current) => ({ ...current, link: event.target.value }))
-                }
-                placeholder="https://..."
-              />
-            </label>
-
-            <label className="field">
-              <span className="field__label">Комментарий</span>
-              <input
-                value={formState.notes}
-                onChange={(event) =>
-                  setFormState((current) => ({ ...current, notes: event.target.value }))
-                }
-                placeholder="Короткая заметка"
-              />
-            </label>
-
             <label className="field field--full">
               <span className="field__label">Статус</span>
               <select
@@ -1660,183 +1519,187 @@ export default function App() {
               </label>
             ) : null}
 
-            <section className="subform-section">
-              <div className="subform-section__header">
-                <div>
-                  <p className="eyebrow">Дополнительно</p>
-                  <h3>Машиноместа</h3>
-                </div>
+            <div className="accordion-stack">
+              <section className={`accordion-card ${openCreatePanel === "preferences" ? "is-open" : ""}`}>
                 <button
                   type="button"
-                  className="secondary-button secondary-button--compact"
-                  onClick={addParkingSpot}
+                  className="accordion-card__button"
+                  onClick={() =>
+                    setOpenCreatePanel((current) =>
+                      current === "preferences" ? null : "preferences",
+                    )
+                  }
                 >
-                  + Добавить машиноместо
+                  <span>Предпочтения</span>
                 </button>
-              </div>
-
-              {formState.parkingSpots.length === 0 ? (
-                <div className="hint-card hint-card--compact">
-                  Здесь можно добавить отдельные машиноместа с адресом, ценой и условиями.
-                </div>
-              ) : null}
-
-              <div className="subform-list">
-                {formState.parkingSpots.map((item, index) => (
-                  <div className="subform-card" key={item.id}>
-                    <div className="subform-card__header">
-                      <strong>Машиноместо #{index + 1}</strong>
-                      <button
-                        type="button"
-                        className="link-button link-button--danger"
-                        onClick={() => removeParkingSpot(item.id)}
-                      >
-                        Удалить
-                      </button>
-                    </div>
-
-                    <div className="subform-grid">
-                      <label className="field">
-                        <span className="field__label">Адрес</span>
-                        <input
-                          value={item.address}
-                          onChange={(event) => updateParkingSpot(item.id, "address", event.target.value)}
-                          placeholder="Адрес машиноместа"
-                        />
-                      </label>
-
-                      <label className="field">
-                        <span className="field__label">Цена</span>
-                        <input
-                          value={item.price}
-                          onChange={(event) => updateParkingSpot(item.id, "price", event.target.value)}
-                          inputMode="decimal"
-                          placeholder="Например, 1500000"
-                        />
-                      </label>
-
-                      <label className="field">
-                        <span className="field__label">Комиссия</span>
-                        <select
-                          value={item.commission}
-                          onChange={(event) => updateParkingSpot(item.id, "commission", event.target.value)}
-                        >
-                          <option value="">Не выбрано</option>
-                          {COMMISSION_OPTIONS.map((option) => (
-                            <option key={option} value={option}>
-                              {option}%
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-
-                      <label className="field">
-                        <span className="field__label">Залог</span>
-                        <input
-                          value={item.deposit}
-                          onChange={(event) => updateParkingSpot(item.id, "deposit", event.target.value)}
-                          inputMode="decimal"
-                          placeholder="Например, 50000"
-                        />
-                      </label>
-
-                      <label className="field">
-                        <span className="field__label">Квадратов</span>
-                        <input
-                          value={item.area}
-                          onChange={(event) => updateParkingSpot(item.id, "area", event.target.value)}
-                          inputMode="decimal"
-                          placeholder="Например, 14.5"
-                        />
-                      </label>
-
-                      <label className="field">
-                        <span className="field__label">Этаж</span>
-                        <input
-                          value={item.floor}
-                          onChange={(event) => updateParkingSpot(item.id, "floor", event.target.value)}
-                          placeholder="Например, -1"
-                        />
-                      </label>
-                    </div>
-
-                    <label className="toggle toggle--card">
-                      <input
-                        type="checkbox"
-                        checked={item.utilitiesIncluded}
+                {openCreatePanel === "preferences" ? (
+                  <div className="accordion-card__panel">
+                    <label className="field field--full">
+                      <span className="field__label">Предпочтения</span>
+                      <textarea
+                        value={formState.preferences}
                         onChange={(event) =>
-                          updateParkingSpot(item.id, "utilitiesIncluded", event.target.checked)
+                          setFormState((current) => ({
+                            ...current,
+                            preferences: event.target.value,
+                          }))
                         }
+                        placeholder="Что важно по клиенту, пожелания, формат работы"
                       />
-                      <span>К/У включены</span>
                     </label>
                   </div>
-                ))}
-              </div>
-            </section>
+                ) : null}
+              </section>
 
-            <section className="subform-section">
-              <div className="subform-section__header">
-                <div>
-                  <p className="eyebrow">Заготовка</p>
-                  <h3>Объекты</h3>
-                </div>
+              <section className={`accordion-card ${openCreatePanel === "objects" ? "is-open" : ""}`}>
                 <button
                   type="button"
-                  className="secondary-button secondary-button--compact"
-                  onClick={addPropertyObject}
+                  className="accordion-card__button"
+                  onClick={() =>
+                    setOpenCreatePanel((current) => (current === "objects" ? null : "objects"))
+                  }
                 >
-                  + Добавить объект
+                  <span>Объекты</span>
+                  <strong>{formState.objects.length}</strong>
                 </button>
-              </div>
-
-              {formState.objects.length === 0 ? (
-                <div className="hint-card hint-card--compact">
-                  Блок объекта добавлен заранее. Позже можно будет расширить поля под твой формат.
-                </div>
-              ) : null}
-
-              <div className="subform-list">
-                {formState.objects.map((item, index) => (
-                  <div className="subform-card" key={item.id}>
-                    <div className="subform-card__header">
-                      <strong>Объект #{index + 1}</strong>
-                      <button
-                        type="button"
-                        className="link-button link-button--danger"
-                        onClick={() => removePropertyObject(item.id)}
-                      >
-                        Удалить
-                      </button>
+                {openCreatePanel === "objects" ? (
+                  <div className="accordion-card__panel">
+                    <div className="subform-section__header">
+                      <div className="hint-card hint-card--compact">
+                        На `+` можно выбрать, что добавлять: объект или машиноместо.
+                      </div>
+                      <div className="object-add-menu">
+                        <button
+                          type="button"
+                          className="secondary-button secondary-button--compact"
+                          onClick={() => setIsObjectMenuOpen((current) => !current)}
+                        >
+                          +
+                        </button>
+                        {isObjectMenuOpen ? (
+                          <div className="object-add-menu__panel">
+                            <button
+                              type="button"
+                              className="client-row__menu-item"
+                              onClick={() => addPropertyObject("object")}
+                            >
+                              Добавить объект
+                            </button>
+                            <button
+                              type="button"
+                              className="client-row__menu-item"
+                              onClick={() => addPropertyObject("parking")}
+                            >
+                              Добавить машиноместо
+                            </button>
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
 
-                    <div className="subform-grid">
-                      <label className="field">
-                        <span className="field__label">Название</span>
-                        <input
-                          value={item.title}
-                          onChange={(event) =>
-                            updatePropertyObject(item.id, "title", event.target.value)
-                          }
-                          placeholder="Например, квартира 3Е"
-                        />
-                      </label>
+                    <div className="subform-list">
+                      {formState.objects.map((item, index) => (
+                        <div className="subform-card" key={item.id}>
+                          <div className="subform-card__header">
+                            <strong>{getObjectKindLabel(item.kind)} #{index + 1}</strong>
+                            <button
+                              type="button"
+                              className="link-button link-button--danger"
+                              onClick={() => removePropertyObject(item.id)}
+                            >
+                              Удалить
+                            </button>
+                          </div>
 
-                      <label className="field field--full">
-                        <span className="field__label">Комментарий</span>
-                        <input
-                          value={item.notes}
-                          onChange={(event) =>
-                            updatePropertyObject(item.id, "notes", event.target.value)
-                          }
-                          placeholder="Описание заполним позже по твоему шаблону"
-                        />
-                      </label>
+                          <div className="subform-grid">
+                            <label className="field">
+                              <span className="field__label">Название</span>
+                              <input
+                                value={item.title}
+                                onChange={(event) =>
+                                  updatePropertyObject(item.id, "title", event.target.value)
+                                }
+                                placeholder={
+                                  item.kind === "parking"
+                                    ? "Например, место 12А"
+                                    : "Например, квартира 3Е"
+                                }
+                              />
+                            </label>
+
+                            <label className="field field--full">
+                              <span className="field__label">Описание</span>
+                              <textarea
+                                value={item.notes}
+                                onChange={(event) =>
+                                  updatePropertyObject(item.id, "notes", event.target.value)
+                                }
+                                placeholder="Короткое описание объекта"
+                              />
+                            </label>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                ))}
-              </div>
-            </section>
+                ) : null}
+              </section>
+
+              <section className={`accordion-card ${openCreatePanel === "passport" ? "is-open" : ""}`}>
+                <button
+                  type="button"
+                  className="accordion-card__button"
+                  onClick={() =>
+                    setOpenCreatePanel((current) => (current === "passport" ? null : "passport"))
+                  }
+                >
+                  <span>Паспортные данные</span>
+                </button>
+                {openCreatePanel === "passport" ? (
+                  <div className="accordion-card__panel">
+                    <label className="field field--full">
+                      <span className="field__label">Паспортные данные</span>
+                      <textarea
+                        value={formState.passportData}
+                        onChange={(event) =>
+                          setFormState((current) => ({
+                            ...current,
+                            passportData: event.target.value,
+                          }))
+                        }
+                        placeholder="Серия, номер, кем и когда выдан, дата рождения"
+                      />
+                    </label>
+                  </div>
+                ) : null}
+              </section>
+
+              <section className={`accordion-card ${openCreatePanel === "comment" ? "is-open" : ""}`}>
+                <button
+                  type="button"
+                  className="accordion-card__button"
+                  onClick={() =>
+                    setOpenCreatePanel((current) => (current === "comment" ? null : "comment"))
+                  }
+                >
+                  <span>Комментарий</span>
+                </button>
+                {openCreatePanel === "comment" ? (
+                  <div className="accordion-card__panel">
+                    <label className="field field--full">
+                      <span className="field__label">Комментарий</span>
+                      <textarea
+                        value={formState.notes}
+                        onChange={(event) =>
+                          setFormState((current) => ({ ...current, notes: event.target.value }))
+                        }
+                        placeholder="Свободный текст"
+                      />
+                    </label>
+                  </div>
+                ) : null}
+              </section>
+            </div>
 
             <button type="submit" className="primary-button" disabled={saving}>
               {saving
@@ -2000,9 +1863,6 @@ export default function App() {
                   <div className="client-row__footer">
                     <div className="client-row__flags">
                       {client.is_proxy_phone ? <span className="badge">Подменный</span> : null}
-                      {client.parking_spots?.length ? (
-                        <span className="badge">Места: {client.parking_spots.length}</span>
-                      ) : null}
                       {client.objects?.length ? (
                         <span className="badge">Объекты: {client.objects.length}</span>
                       ) : null}
@@ -2042,7 +1902,10 @@ export default function App() {
       {screen === "list" ? (
         <div
           className="fab-menu"
-          style={{ "--search-keyboard-offset": `${searchKeyboardOffset}px` } as CSSProperties}
+          style={{
+            "--search-keyboard-offset": `${searchKeyboardOffset}px`,
+            transform: searchKeyboardOffset ? `translateY(-${searchKeyboardOffset}px)` : undefined,
+          } as CSSProperties}
         >
           <div className={`search-flyout ${showSearch ? "is-open" : ""}`}>
             <div className="search-flyout__field">
@@ -2065,17 +1928,6 @@ export default function App() {
           </div>
 
           <div className={`fab-menu__actions ${isFabMenuOpen ? "is-open" : ""}`}>
-            {settings.listActionSearchEnabled ? (
-              <button
-                type="button"
-                className="fab fab--action"
-                onClick={openSearch}
-                aria-label="Поиск"
-              >
-                <SearchIcon />
-              </button>
-            ) : null}
-
             {settings.listActionReactionEnabled ? (
               <button
                 type="button"
@@ -2087,7 +1939,18 @@ export default function App() {
                 }}
                 aria-label="Настройки меню"
               >
-                <SmileIcon />
+                <SettingsIcon />
+              </button>
+            ) : null}
+
+            {settings.listActionSearchEnabled ? (
+              <button
+                type="button"
+                className="fab fab--action"
+                onClick={openSearch}
+                aria-label="Поиск"
+              >
+                <SearchIcon />
               </button>
             ) : null}
 
