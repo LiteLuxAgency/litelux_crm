@@ -67,7 +67,9 @@ a {
 }
 
 .app-shell {
-  position: relative;
+  position: fixed;
+  inset: 0;
+  width: 100%;
   --layout-max-width: 500px;
   --layout-inline: 16px;
   --layout-top: calc(env(safe-area-inset-top, 0px) + 16px);
@@ -695,9 +697,10 @@ a {
   right: 16px;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  min-height: 38px;
-  padding: 0 14px;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
   border-radius: 12px;
   border: 1px solid rgba(255, 225, 191, 0.12);
   background:
@@ -711,10 +714,6 @@ a {
 .detail-card__edit svg {
   width: 16px;
   height: 16px;
-}
-
-.detail-card__edit span {
-  line-height: 1;
 }
 
 .detail-card--warning {
@@ -1463,11 +1462,11 @@ a {
 
 .search-flyout__field {
   display: grid;
-  grid-template-columns: 20px minmax(0, 1fr) 36px;
+  grid-template-columns: 20px minmax(0, 1fr);
   align-items: center;
   gap: 10px;
   min-height: 54px;
-  padding: 0 10px 0 14px;
+  padding: 0 14px;
   border-radius: 999px;
   border: 1px solid rgba(255, 225, 191, 0.16);
   background:
@@ -1497,19 +1496,6 @@ a {
 
 .search-flyout__field input::placeholder {
   color: rgba(255, 247, 236, 0.48);
-}
-
-.search-flyout__close {
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  border: 1px solid rgba(255, 225, 191, 0.12);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.05);
-  color: #fff0dd;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .fab-menu .fab {
@@ -2006,11 +1992,9 @@ a {
   .detail-card__edit {
     top: 12px;
     right: 12px;
-    min-height: 34px;
-    padding: 0 11px;
+    width: 34px;
+    height: 34px;
     border-radius: 11px;
-    gap: 6px;
-    font-size: 0.82rem;
   }
 
   .detail-card__edit svg {

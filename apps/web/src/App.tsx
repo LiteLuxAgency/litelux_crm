@@ -1,5 +1,5 @@
 import { CSSProperties, FormEvent, TouchEvent, startTransition, useEffect, useRef, useState } from "react";
-import { getTelegramWebApp, initTelegramApp, isTelegramMiniApp, openExternalLink } from "./lib/telegram";
+import { getTelegramWebApp, initTelegramApp, isTelegramMiniApp } from "./lib/telegram";
 
 type Screen = "list" | "view" | "create" | "settings";
 type CreatePanel = "preferences" | "objects" | "passport" | "comment" | null;
@@ -234,27 +234,6 @@ function SearchIcon() {
         fill="none"
         stroke="currentColor"
         strokeWidth="1.8"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function CloseIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        d="M6 6L18 18"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.9"
-        strokeLinecap="round"
-      />
-      <path
-        d="M18 6L6 18"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.9"
         strokeLinecap="round"
       />
     </svg>
@@ -808,7 +787,14 @@ export default function App() {
   function openSearch() {
     setActiveMenuClientId(null);
     setConfirmDeleteClientId(null);
-    setShowSearch(true);
+    setShowSearch((current) => {
+      const next = !current;
+      if (!next) {
+        setSearchQuery("");
+        setSearchKeyboardOffset(0);
+      }
+      return next;
+    });
     setIsFabMenuOpen(true);
   }
 
@@ -972,9 +958,12 @@ export default function App() {
     setEditingClientId(null);
     setSelectedClientId(null);
     setFormState(initialFormState);
-    setOpenCreatePanel("preferences");
+    setOpenCreatePanel(null);
     setIsObjectMenuOpen(false);
     setScreen("create");
+    window.requestAnimationFrame(() => {
+      document.querySelector(".app-shell__content")?.scrollTo({ top: 0, behavior: "smooth" });
+    });
   }
 
   function openView(client: Client) {
@@ -990,9 +979,12 @@ export default function App() {
     setSelectedClientId(client.id);
     setEditingClientId(client.id);
     setFormState(clientToFormState(client));
-    setOpenCreatePanel("preferences");
+    setOpenCreatePanel(null);
     setIsObjectMenuOpen(false);
     setScreen("create");
+    window.requestAnimationFrame(() => {
+      document.querySelector(".app-shell__content")?.scrollTo({ top: 0, behavior: "smooth" });
+    });
   }
 
   async function handleMarkArchived(client: Client) {
@@ -1046,7 +1038,7 @@ export default function App() {
     setScreen("list");
     setSelectedClientId(null);
     setEditingClientId(null);
-    setOpenCreatePanel("preferences");
+    setOpenCreatePanel(null);
     setIsObjectMenuOpen(false);
     setFormState(initialFormState);
   }
@@ -1259,7 +1251,6 @@ export default function App() {
                 aria-label="Редактировать клиента"
               >
                 <EditIcon />
-                <span>Редактировать</span>
               </button>
 
               <div className="detail-card__top">
@@ -1916,14 +1907,6 @@ export default function App() {
                 onChange={(event) => setSearchQuery(event.target.value)}
                 placeholder="Поиск по всей базе"
               />
-              <button
-                type="button"
-                className="search-flyout__close"
-                onClick={closeSearch}
-                aria-label="Закрыть поиск"
-              >
-                <CloseIcon />
-              </button>
             </div>
           </div>
 
