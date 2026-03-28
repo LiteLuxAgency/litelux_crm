@@ -1,14 +1,33 @@
-import { FormEvent, TouchEvent, startTransition, useEffect, useRef, useState } from "react";
+import { CSSProperties, FormEvent, TouchEvent, startTransition, useEffect, useRef, useState } from "react";
 import { getTelegramWebApp, initTelegramApp, isTelegramMiniApp, openExternalLink } from "./lib/telegram";
 
 type Screen = "list" | "view" | "create" | "settings";
+
+type ParkingSpot = {
+  id: string;
+  address: string;
+  price: number | null;
+  commission: number | null;
+  utilitiesIncluded: boolean;
+  deposit: number | null;
+  area: number | null;
+  floor: string;
+};
+
+type PropertyObject = {
+  id: string;
+  title: string;
+  notes: string;
+};
 
 type Client = {
   id: string;
   client_number: number;
   address: string;
+  complex_name: string;
   name: string;
   phone: string;
+  is_proxy_phone: boolean;
   commission: number | null;
   link: string;
   is_duplicate: boolean;
@@ -20,6 +39,8 @@ type Client = {
   no_answer_marked_at?: string | null;
   no_answer_reminded_at?: string | null;
   notes: string;
+  parking_spots: ParkingSpot[];
+  objects: PropertyObject[];
   created_at: string;
   is_archived?: boolean;
 };
@@ -29,12 +50,34 @@ type Settings = {
   telegramChatId: string;
   telegramEnabled: boolean;
   telegramBotTokenPresent: boolean;
+  listActionSearchEnabled: boolean;
+  listActionReactionEnabled: boolean;
+  listActionCreateEnabled: boolean;
+};
+
+type ParkingSpotFormState = {
+  id: string;
+  address: string;
+  price: string;
+  commission: string;
+  utilitiesIncluded: boolean;
+  deposit: string;
+  area: string;
+  floor: string;
+};
+
+type PropertyObjectFormState = {
+  id: string;
+  title: string;
+  notes: string;
 };
 
 type ClientFormState = {
   name: string;
   address: string;
+  complexName: string;
   phone: string;
+  isProxyPhone: boolean;
   commission: string;
   link: string;
   isDuplicate: boolean;
@@ -43,11 +86,16 @@ type ClientFormState = {
   noAnswer: boolean;
   callbackAt: string;
   notes: string;
+  parkingSpots: ParkingSpotFormState[];
+  objects: PropertyObjectFormState[];
 };
 
 type SettingsFormState = {
   telegramBotToken: string;
   telegramEnabled: boolean;
+  listActionSearchEnabled: boolean;
+  listActionReactionEnabled: boolean;
+  listActionCreateEnabled: boolean;
 };
 
 type ClientPriorityTone = "normal" | "success" | "warning" | "danger";
@@ -56,10 +104,39 @@ type ClientDueKind = "callback" | "noAnswer";
 
 const API_URL = import.meta.env.VITE_API_URL || window.location.origin;
 
+function createLocalId() {
+  return Math.random().toString(36).slice(2, 10);
+}
+
+function createParkingSpotFormState(): ParkingSpotFormState {
+  return {
+    id: createLocalId(),
+    address: "",
+    price: "",
+    commission: "",
+    utilitiesIncluded: false,
+    deposit: "",
+    area: "",
+    floor: "",
+  };
+}
+
+function createPropertyObjectFormState(): PropertyObjectFormState {
+  return {
+    id: createLocalId(),
+    title: "",
+    notes: "",
+  };
+}
+
+const COMMISSION_OPTIONS = Array.from({ length: 100 }, (_, index) => String(index + 1));
+
 const initialFormState: ClientFormState = {
   name: "",
   address: "",
+  complexName: "",
   phone: "",
+  isProxyPhone: false,
   commission: "",
   link: "",
   isDuplicate: false,
@@ -68,11 +145,16 @@ const initialFormState: ClientFormState = {
   noAnswer: false,
   callbackAt: "",
   notes: "",
+  parkingSpots: [],
+  objects: [],
 };
 
 const initialSettingsState: SettingsFormState = {
   telegramBotToken: "",
   telegramEnabled: false,
+  listActionSearchEnabled: true,
+  listActionReactionEnabled: true,
+  listActionCreateEnabled: true,
 };
 
 function ArrowLeftIcon() {
@@ -108,6 +190,69 @@ function SettingsIcon() {
         fill="none"
         stroke="currentColor"
         strokeWidth="1.55"
+      />
+    </svg>
+  );
+}
+
+function MenuIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M5 7H19" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+      <path d="M5 12H19" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+      <path d="M5 17H19" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function SearchIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="11" cy="11" r="6.8" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <path
+        d="M16.1 16.1L20 20"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M6 6L18 18"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinecap="round"
+      />
+      <path
+        d="M18 6L6 18"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function SmileIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <circle cx="9" cy="10" r="1" fill="currentColor" />
+      <circle cx="15" cy="10" r="1" fill="currentColor" />
+      <path
+        d="M8.5 14C9.4 15.1 10.6 15.7 12 15.7C13.4 15.7 14.6 15.1 15.5 14"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
       />
     </svg>
   );
@@ -249,11 +394,40 @@ function toDateTimeLocalValue(value: string | null) {
   return localDate.toISOString().slice(0, 16);
 }
 
+function toNumberOrNull(value: string): number | null {
+  if (!value.trim()) return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function normalizeClientParkingSpots(items: ParkingSpot[] | null | undefined): ParkingSpotFormState[] {
+  return (items ?? []).map((item) => ({
+    id: item.id || createLocalId(),
+    address: item.address ?? "",
+    price: item.price !== null && item.price !== undefined ? String(item.price) : "",
+    commission: item.commission !== null && item.commission !== undefined ? String(item.commission) : "",
+    utilitiesIncluded: Boolean(item.utilitiesIncluded),
+    deposit: item.deposit !== null && item.deposit !== undefined ? String(item.deposit) : "",
+    area: item.area !== null && item.area !== undefined ? String(item.area) : "",
+    floor: item.floor ?? "",
+  }));
+}
+
+function normalizeClientObjects(items: PropertyObject[] | null | undefined): PropertyObjectFormState[] {
+  return (items ?? []).map((item) => ({
+    id: item.id || createLocalId(),
+    title: item.title ?? "",
+    notes: item.notes ?? "",
+  }));
+}
+
 function clientToFormState(client: Client): ClientFormState {
   return {
     name: client.name,
     address: client.address ?? "",
+    complexName: client.complex_name ?? "",
     phone: client.phone,
+    isProxyPhone: Boolean(client.is_proxy_phone),
     commission: client.commission !== null ? String(client.commission) : "",
     link: client.link ?? "",
     isDuplicate: client.is_duplicate,
@@ -262,7 +436,14 @@ function clientToFormState(client: Client): ClientFormState {
     noAnswer: client.no_answer,
     callbackAt: toDateTimeLocalValue(client.callback_at),
     notes: client.notes ?? "",
+    parkingSpots: normalizeClientParkingSpots(client.parking_spots),
+    objects: normalizeClientObjects(client.objects),
   };
+}
+
+function startOfLocalDayMs(value: number | string | Date) {
+  const date = new Date(value);
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
 }
 
 function getNoAnswerDueAt(client: Client): number | null {
@@ -278,26 +459,33 @@ function getNoAnswerDueAt(client: Client): number | null {
   return markedAtMs + 24 * 60 * 60 * 1000;
 }
 
-function getClientDueInfo(client: Client): { kind: ClientDueKind; dueAtMs: number } | null {
-  const dueEntries: Array<{ kind: ClientDueKind; dueAtMs: number }> = [];
-
+function getClientDueInfo(
+  client: Client,
+): { kind: ClientDueKind; dueAtMs: number; priorityAtMs: number; displayDiffMs: number } | null {
   if (client.callback_at) {
-    const callbackAtMs = new Date(client.callback_at).getTime();
+    const callbackDate = new Date(client.callback_at);
+    const callbackAtMs = callbackDate.getTime();
     if (!Number.isNaN(callbackAtMs)) {
-      dueEntries.push({ kind: "callback", dueAtMs: callbackAtMs });
+      return {
+        kind: "callback",
+        dueAtMs: callbackAtMs,
+        priorityAtMs: startOfLocalDayMs(callbackDate),
+        displayDiffMs: startOfLocalDayMs(callbackDate) - startOfLocalDayMs(Date.now()),
+      };
     }
   }
 
   const noAnswerDueAt = getNoAnswerDueAt(client);
   if (noAnswerDueAt !== null) {
-    dueEntries.push({ kind: "noAnswer", dueAtMs: noAnswerDueAt });
+    return {
+      kind: "noAnswer",
+      dueAtMs: noAnswerDueAt,
+      priorityAtMs: noAnswerDueAt,
+      displayDiffMs: noAnswerDueAt - Date.now(),
+    };
   }
 
-  if (dueEntries.length === 0) {
-    return null;
-  }
-
-  return dueEntries.sort((left, right) => left.dueAtMs - right.dueAtMs)[0];
+  return null;
 }
 
 function getClientPriorityTone(client: Client, now = Date.now()): ClientPriorityTone {
@@ -306,11 +494,11 @@ function getClientPriorityTone(client: Client, now = Date.now()): ClientPriority
     return "normal";
   }
 
-  if (dueInfo.dueAtMs <= now) {
+  if (dueInfo.priorityAtMs <= now) {
     return "danger";
   }
 
-  if (dueInfo.dueAtMs - now <= 24 * 60 * 60 * 1000) {
+  if (dueInfo.priorityAtMs - now <= 24 * 60 * 60 * 1000) {
     return "warning";
   }
 
@@ -395,13 +583,19 @@ function getClientDueLabel(client: Client, now = Date.now()): string | null {
     return null;
   }
 
-  const diffMs = dueInfo.dueAtMs - now;
+  const diffMs = dueInfo.kind === "callback"
+    ? startOfLocalDayMs(dueInfo.dueAtMs) - startOfLocalDayMs(now)
+    : dueInfo.displayDiffMs;
+
+  if (dueInfo.kind === "callback" && diffMs === 0) {
+    return "сегодня";
+  }
 
   if (diffMs <= 0) {
     return `${formatDurationLabel(Math.abs(diffMs))} назад`;
   }
 
-  return `осталось ${formatDurationLabel(diffMs)}`;
+  return `через ${formatDurationLabel(diffMs)}`;
 }
 
 function formatBooleanLabel(value: boolean): string {
@@ -419,6 +613,9 @@ export default function App() {
     telegramChatId: "",
     telegramEnabled: false,
     telegramBotTokenPresent: false,
+    listActionSearchEnabled: true,
+    listActionReactionEnabled: true,
+    listActionCreateEnabled: true,
   });
   const [settingsForm, setSettingsForm] = useState<SettingsFormState>(initialSettingsState);
   const [loading, setLoading] = useState(false);
@@ -429,17 +626,41 @@ export default function App() {
   const [activeFilter, setActiveFilter] = useState<ClientFilter>("tasks");
   const [activeMenuClientId, setActiveMenuClientId] = useState<string | null>(null);
   const [confirmDeleteClientId, setConfirmDeleteClientId] = useState<string | null>(null);
+  const [isFabMenuOpen, setIsFabMenuOpen] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchKeyboardOffset, setSearchKeyboardOffset] = useState(0);
   const sortedClients = sortClientsByPriority(clients);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
   const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
   const swipeDeltaRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const selectedClient = clients.find((client) => client.id === selectedClientId) ?? null;
   const screenClassName = `app-shell--screen-${screen}`;
+  const normalizedSearch = searchQuery.trim().toLowerCase();
   const visibleClients = sortedClients.filter((client) => {
+    if (normalizedSearch) {
+      const searchable = [
+        client.name,
+        client.phone,
+        client.address,
+        client.notes,
+        client.client_number.toString(),
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      if (!searchable.includes(normalizedSearch)) {
+        return false;
+      }
+
+      return true;
+    }
+
     if (activeFilter !== "archive" && client.is_archived) return false;
     if (activeFilter === "archive") return Boolean(client.is_archived);
     if (activeFilter === "tasks") {
       const tone = getClientPriorityTone(client);
-      return tone === "danger" || tone === "warning";
+      return tone !== "normal";
     }
     if (activeFilter === "inWork") return !client.no_answer;
     if (activeFilter === "duplicate") return client.is_duplicate;
@@ -457,6 +678,86 @@ export default function App() {
     void loadClients();
     void loadSettings();
   }, []);
+
+  useEffect(() => {
+    setIsFabMenuOpen(false);
+  }, [screen]);
+
+  useEffect(() => {
+    if (!showSearch) {
+      setSearchKeyboardOffset(0);
+      return;
+    }
+
+    const focusId = window.requestAnimationFrame(() => {
+      searchInputRef.current?.focus();
+      searchInputRef.current?.select();
+    });
+
+    const viewport = window.visualViewport;
+    if (!viewport) {
+      return () => window.cancelAnimationFrame(focusId);
+    }
+
+    const updateOffset = () => {
+      const nextOffset = Math.max(
+        0,
+        window.innerHeight - viewport.height - viewport.offsetTop,
+      );
+      setSearchKeyboardOffset(nextOffset);
+    };
+
+    updateOffset();
+    viewport.addEventListener("resize", updateOffset);
+    viewport.addEventListener("scroll", updateOffset);
+
+    return () => {
+      window.cancelAnimationFrame(focusId);
+      viewport.removeEventListener("resize", updateOffset);
+      viewport.removeEventListener("scroll", updateOffset);
+    };
+  }, [showSearch]);
+
+  useEffect(() => {
+    if (!activeMenuClientId) {
+      return;
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+      if (target.closest(".client-row__menu") || target.closest(".client-row__menu-trigger")) {
+        return;
+      }
+      setActiveMenuClientId(null);
+      setConfirmDeleteClientId(null);
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, [activeMenuClientId]);
+
+  function closeFloatingUi() {
+    setActiveMenuClientId(null);
+    setConfirmDeleteClientId(null);
+    setIsFabMenuOpen(false);
+  }
+
+  function openSearch() {
+    setActiveMenuClientId(null);
+    setConfirmDeleteClientId(null);
+    setShowSearch(true);
+    setIsFabMenuOpen(true);
+  }
+
+  function closeSearch() {
+    setSearchQuery("");
+    setShowSearch(false);
+    setSearchKeyboardOffset(0);
+    setIsFabMenuOpen(false);
+  }
 
   async function loadClients() {
     setLoading(true);
@@ -489,6 +790,9 @@ export default function App() {
       setSettingsForm({
         telegramBotToken: "",
         telegramEnabled: payload.telegramEnabled,
+        listActionSearchEnabled: payload.listActionSearchEnabled,
+        listActionReactionEnabled: payload.listActionReactionEnabled,
+        listActionCreateEnabled: payload.listActionCreateEnabled,
       });
     } catch {
       setSettings((current) => ({ ...current, telegramEnabled: false }));
@@ -511,6 +815,9 @@ export default function App() {
             ? { telegramBotToken: settingsForm.telegramBotToken.trim() }
             : {}),
           telegramEnabled: settingsForm.telegramEnabled,
+          listActionSearchEnabled: settingsForm.listActionSearchEnabled,
+          listActionReactionEnabled: settingsForm.listActionReactionEnabled,
+          listActionCreateEnabled: settingsForm.listActionCreateEnabled,
         }),
       });
 
@@ -540,7 +847,9 @@ export default function App() {
       const payload: Record<string, unknown> = {
         name: formState.name,
         address: formState.address,
+        complexName: formState.complexName,
         phone: formState.phone,
+        isProxyPhone: formState.isProxyPhone,
         isDuplicate: formState.isDuplicate,
         isExclusive: formState.isExclusive,
         onlyClients: formState.onlyClients,
@@ -549,11 +858,24 @@ export default function App() {
           ? new Date(formState.callbackAt).toISOString()
           : null,
         notes: formState.notes,
+        parkingSpots: formState.parkingSpots.map((item) => ({
+          id: item.id,
+          address: item.address,
+          price: toNumberOrNull(item.price),
+          commission: toNumberOrNull(item.commission),
+          utilitiesIncluded: item.utilitiesIncluded,
+          deposit: toNumberOrNull(item.deposit),
+          area: toNumberOrNull(item.area),
+          floor: item.floor,
+        })),
+        objects: formState.objects.map((item) => ({
+          id: item.id,
+          title: item.title,
+          notes: item.notes,
+        })),
       };
 
-      if (formState.commission.trim()) {
-        payload.commission = Number(formState.commission);
-      }
+      payload.commission = toNumberOrNull(formState.commission);
 
       if (formState.link.trim()) {
         payload.link = formState.link.trim();
@@ -595,8 +917,8 @@ export default function App() {
   }
 
   function openCreateForm() {
-    setActiveMenuClientId(null);
-    setConfirmDeleteClientId(null);
+    closeFloatingUi();
+    setShowSearch(false);
     setEditingClientId(null);
     setSelectedClientId(null);
     setFormState(initialFormState);
@@ -604,15 +926,15 @@ export default function App() {
   }
 
   function openView(client: Client) {
-    setActiveMenuClientId(null);
-    setConfirmDeleteClientId(null);
+    closeFloatingUi();
+    setShowSearch(false);
     setSelectedClientId(client.id);
     setScreen("view");
   }
 
   function openEditForm(client: Client) {
-    setActiveMenuClientId(null);
-    setConfirmDeleteClientId(null);
+    closeFloatingUi();
+    setShowSearch(false);
     setSelectedClientId(client.id);
     setEditingClientId(client.id);
     setFormState(clientToFormState(client));
@@ -620,42 +942,53 @@ export default function App() {
   }
 
   async function handleMarkArchived(client: Client) {
-    if (client.is_archived) {
-      return;
-    }
-
     setSaving(true);
     setError(null);
 
     try {
+      const nextArchivedState = !client.is_archived;
       const response = await fetch(`${API_URL}/api/clients/${client.id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ isArchived: true }),
+        body: JSON.stringify({ isArchived: nextArchivedState }),
       });
 
       if (!response.ok) {
         const payload = (await response.json().catch(() => null)) as
           | { error?: string }
           | null;
-        throw new Error(payload?.error || "Не удалось переместить клиента в архив");
+        throw new Error(
+          payload?.error ||
+            (nextArchivedState
+              ? "Не удалось переместить клиента в архив"
+              : "Не удалось вернуть клиента из архива"),
+        );
       }
 
+      closeFloatingUi();
       await loadClients();
-      goToList();
-      setActiveFilter("archive");
+
+      if (nextArchivedState) {
+        goToList();
+        setActiveFilter("archive");
+      }
     } catch (archiveError) {
-      setError(archiveError instanceof Error ? archiveError.message : "Ошибка архивации");
+      setError(
+        archiveError instanceof Error
+          ? archiveError.message
+          : client.is_archived
+            ? "Ошибка возврата из архива"
+            : "Ошибка архивации",
+      );
     } finally {
       setSaving(false);
     }
   }
 
   function goToList() {
-    setActiveMenuClientId(null);
-    setConfirmDeleteClientId(null);
+    closeFloatingUi();
     setScreen("list");
     setSelectedClientId(null);
     setEditingClientId(null);
@@ -678,8 +1011,7 @@ export default function App() {
         throw new Error(payload?.error || "Не удалось удалить клиента");
       }
 
-      setActiveMenuClientId(null);
-      setConfirmDeleteClientId(null);
+      closeFloatingUi();
 
       if (selectedClientId === client.id || editingClientId === client.id) {
         goToList();
@@ -691,6 +1023,76 @@ export default function App() {
     } finally {
       setSaving(false);
     }
+  }
+
+  function handleDuplicateToggle(nextValue: boolean) {
+    setFormState((current) => ({
+      ...current,
+      isDuplicate: nextValue,
+      isExclusive: nextValue ? false : current.isExclusive,
+    }));
+  }
+
+  function handleExclusiveToggle(nextValue: boolean) {
+    setFormState((current) => ({
+      ...current,
+      isExclusive: nextValue,
+      isDuplicate: nextValue ? false : current.isDuplicate,
+    }));
+  }
+
+  function addParkingSpot() {
+    setFormState((current) => ({
+      ...current,
+      parkingSpots: [...current.parkingSpots, createParkingSpotFormState()],
+    }));
+  }
+
+  function updateParkingSpot(
+    id: string,
+    field: keyof ParkingSpotFormState,
+    value: string | boolean,
+  ) {
+    setFormState((current) => ({
+      ...current,
+      parkingSpots: current.parkingSpots.map((item) =>
+        item.id === id ? { ...item, [field]: value } : item,
+      ),
+    }));
+  }
+
+  function removeParkingSpot(id: string) {
+    setFormState((current) => ({
+      ...current,
+      parkingSpots: current.parkingSpots.filter((item) => item.id !== id),
+    }));
+  }
+
+  function addPropertyObject() {
+    setFormState((current) => ({
+      ...current,
+      objects: [...current.objects, createPropertyObjectFormState()],
+    }));
+  }
+
+  function updatePropertyObject(
+    id: string,
+    field: keyof PropertyObjectFormState,
+    value: string,
+  ) {
+    setFormState((current) => ({
+      ...current,
+      objects: current.objects.map((item) =>
+        item.id === id ? { ...item, [field]: value } : item,
+      ),
+    }));
+  }
+
+  function removePropertyObject(id: string) {
+    setFormState((current) => ({
+      ...current,
+      objects: current.objects.filter((item) => item.id !== id),
+    }));
   }
 
   function handleTopBack() {
@@ -732,7 +1134,11 @@ export default function App() {
           <button
             type="button"
             className="icon-button topbar__settings-button"
-            onClick={() => setScreen("settings")}
+            onClick={() => {
+              closeFloatingUi();
+              setShowSearch(false);
+              setScreen("settings");
+            }}
             aria-label="Настройки"
           >
             <SettingsIcon />
@@ -794,27 +1200,48 @@ export default function App() {
 
   function renderContent() {
     if (screen === "view" && selectedClient) {
+      const selectedClientTone = getClientPriorityTone(selectedClient);
+      const selectedClientDueLabel = getClientDueLabel(selectedClient);
+
       return (
         <section className="sheet sheet--view">
           <div className="detail-view-shell">
-            <div className={`detail-card detail-card--${getClientPriorityTone(selectedClient)}`}>
+            <div className={`detail-card detail-card--${selectedClientTone}`}>
+              <button
+                type="button"
+                className="detail-card__edit"
+                onClick={() => openEditForm(selectedClient)}
+                aria-label="Редактировать клиента"
+              >
+                <EditIcon />
+                <span>Редактировать</span>
+              </button>
+
               <div className="detail-card__top">
-                <div className="detail-card__number">{selectedClient.client_number}</div>
-                <div className="detail-card__info">
+                <div className="detail-card__identity">
+                  <div className="detail-card__id-label">ID: {selectedClient.client_number}</div>
                   <h2>{selectedClient.name}</h2>
-                  <a href={`tel:${selectedClient.phone}`}>{selectedClient.phone}</a>
+                </div>
+                <div className="detail-card__info detail-card__info--location">
                   <div className="detail-card__address">{selectedClient.address || "Без адреса"}</div>
+                  {selectedClient.complex_name ? (
+                    <div className="detail-card__complex">ЖК: {selectedClient.complex_name}</div>
+                  ) : null}
                 </div>
               </div>
 
-              <div className="detail-card__meta">{getClientDueLabel(selectedClient) || "Без задачи"}</div>
+              <div className={`detail-card__meta detail-card__meta--${selectedClientTone}`}>
+                {selectedClient.callback_at
+                  ? `Перезвонить ${selectedClientDueLabel || ""}`.trim()
+                  : selectedClientDueLabel || "Без задачи"}
+              </div>
 
               <div className="detail-card__grid">
                 <div className="detail-item">
                   <span>Комиссия</span>
                   <strong>{selectedClient.commission ?? 0}%</strong>
                 </div>
-                <div className="detail-item">
+                <div className={`detail-item detail-item--due detail-item--${selectedClientTone}`}>
                   <span>Перезвонить</span>
                   <strong>{selectedClient.callback_at ? formatDate(selectedClient.callback_at) : "Не назначено"}</strong>
                 </div>
@@ -844,6 +1271,43 @@ export default function App() {
                 <div className="detail-card__notes">
                   <span>Комментарий</span>
                   <strong>{selectedClient.notes}</strong>
+                </div>
+              ) : null}
+
+              {selectedClient.parking_spots?.length ? (
+                <div className="detail-related">
+                  <div className="detail-related__title">Машиноместа</div>
+                  <div className="detail-related__list">
+                    {selectedClient.parking_spots.map((item, index) => (
+                      <div className="detail-related__card" key={item.id || `${item.address}-${index}`}>
+                        <strong>Машиноместо #{index + 1}</strong>
+                        <span>{item.address || "Адрес не указан"}</span>
+                        <span>
+                          Цена: {item.price ?? "нет"} | Комиссия: {item.commission ?? "нет"}%
+                        </span>
+                        <span>
+                          К/У {item.utilitiesIncluded ? "включены" : "отдельно"} | Залог: {item.deposit ?? "нет"}
+                        </span>
+                        <span>
+                          Площадь: {item.area ?? "нет"} | Этаж: {item.floor || "нет"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {selectedClient.objects?.length ? (
+                <div className="detail-related">
+                  <div className="detail-related__title">Объекты</div>
+                  <div className="detail-related__list">
+                    {selectedClient.objects.map((item, index) => (
+                      <div className="detail-related__card" key={item.id || `${item.title}-${index}`}>
+                        <strong>{item.title || `Объект #${index + 1}`}</strong>
+                        <span>{item.notes || "Описание пока не заполнено"}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ) : null}
             </div>
@@ -888,7 +1352,7 @@ export default function App() {
           <div className="sheet__header">
             <div>
               <p className="eyebrow">Настройки</p>
-              <h2>Подключение Telegram</h2>
+              <h2>Telegram и меню списка</h2>
             </div>
           </div>
 
@@ -924,6 +1388,52 @@ export default function App() {
               />
               <span>Включить Telegram-бота</span>
             </label>
+
+            <div className="settings-section">
+              <div className="settings-section__title">Меню списка</div>
+
+              <label className="toggle">
+                <input
+                  type="checkbox"
+                  checked={settingsForm.listActionSearchEnabled}
+                  onChange={(event) =>
+                    setSettingsForm((current) => ({
+                      ...current,
+                      listActionSearchEnabled: event.target.checked,
+                    }))
+                  }
+                />
+                <span>Поиск внизу справа</span>
+              </label>
+
+              <label className="toggle">
+                <input
+                  type="checkbox"
+                  checked={settingsForm.listActionReactionEnabled}
+                  onChange={(event) =>
+                    setSettingsForm((current) => ({
+                      ...current,
+                      listActionReactionEnabled: event.target.checked,
+                    }))
+                  }
+                />
+                <span>Смайлик настроек</span>
+              </label>
+
+              <label className="toggle">
+                <input
+                  type="checkbox"
+                  checked={settingsForm.listActionCreateEnabled}
+                  onChange={(event) =>
+                    setSettingsForm((current) => ({
+                      ...current,
+                      listActionCreateEnabled: event.target.checked,
+                    }))
+                  }
+                />
+                <span>Добавление клиента</span>
+              </label>
+            </div>
 
             <div className="status-card">
               <span
@@ -1010,20 +1520,46 @@ export default function App() {
             </label>
 
             <label className="field">
-              <span className="field__label">Номер телефона</span>
+              <span className="field__label">ЖК</span>
               <input
-                required
-                value={formState.phone}
+                value={formState.complexName}
                 onChange={(event) =>
-                  setFormState((current) => ({ ...current, phone: event.target.value }))
+                  setFormState((current) => ({ ...current, complexName: event.target.value }))
                 }
-                placeholder="+7 999 123-45-67"
+                placeholder="Название жилого комплекса"
               />
             </label>
 
+            <div className="field field--phone">
+              <span className="field__label">Номер телефона</span>
+              <div className="field__inline">
+                <input
+                  required
+                  value={formState.phone}
+                  onChange={(event) =>
+                    setFormState((current) => ({ ...current, phone: event.target.value }))
+                  }
+                  placeholder="+7 999 123-45-67"
+                />
+                <label className="toggle toggle--compact">
+                  <input
+                    type="checkbox"
+                    checked={formState.isProxyPhone}
+                    onChange={(event) =>
+                      setFormState((current) => ({
+                        ...current,
+                        isProxyPhone: event.target.checked,
+                      }))
+                    }
+                  />
+                  <span>Подменный</span>
+                </label>
+              </div>
+            </div>
+
             <label className="field">
               <span className="field__label">Комиссия</span>
-              <input
+              <select
                 value={formState.commission}
                 onChange={(event) =>
                   setFormState((current) => ({
@@ -1031,9 +1567,14 @@ export default function App() {
                     commission: event.target.value,
                   }))
                 }
-                inputMode="decimal"
-                placeholder="Например, 3"
-              />
+              >
+                <option value="">Не выбрано</option>
+                {COMMISSION_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}%
+                  </option>
+                ))}
+              </select>
             </label>
 
             <label className="field">
@@ -1077,12 +1618,7 @@ export default function App() {
                 <input
                   type="checkbox"
                   checked={formState.isDuplicate}
-                  onChange={(event) =>
-                    setFormState((current) => ({
-                      ...current,
-                      isDuplicate: event.target.checked,
-                    }))
-                  }
+                  onChange={(event) => handleDuplicateToggle(event.target.checked)}
                 />
                 <span>Дубль</span>
               </label>
@@ -1091,12 +1627,7 @@ export default function App() {
                 <input
                   type="checkbox"
                   checked={formState.isExclusive}
-                  onChange={(event) =>
-                    setFormState((current) => ({
-                      ...current,
-                      isExclusive: event.target.checked,
-                    }))
-                  }
+                  onChange={(event) => handleExclusiveToggle(event.target.checked)}
                 />
                 <span>Эксклюзив</span>
               </label>
@@ -1130,6 +1661,184 @@ export default function App() {
               </label>
             </div>
 
+            <section className="subform-section">
+              <div className="subform-section__header">
+                <div>
+                  <p className="eyebrow">Дополнительно</p>
+                  <h3>Машиноместа</h3>
+                </div>
+                <button
+                  type="button"
+                  className="secondary-button secondary-button--compact"
+                  onClick={addParkingSpot}
+                >
+                  + Добавить машиноместо
+                </button>
+              </div>
+
+              {formState.parkingSpots.length === 0 ? (
+                <div className="hint-card hint-card--compact">
+                  Здесь можно добавить отдельные машиноместа с адресом, ценой и условиями.
+                </div>
+              ) : null}
+
+              <div className="subform-list">
+                {formState.parkingSpots.map((item, index) => (
+                  <div className="subform-card" key={item.id}>
+                    <div className="subform-card__header">
+                      <strong>Машиноместо #{index + 1}</strong>
+                      <button
+                        type="button"
+                        className="link-button link-button--danger"
+                        onClick={() => removeParkingSpot(item.id)}
+                      >
+                        Удалить
+                      </button>
+                    </div>
+
+                    <div className="subform-grid">
+                      <label className="field">
+                        <span className="field__label">Адрес</span>
+                        <input
+                          value={item.address}
+                          onChange={(event) => updateParkingSpot(item.id, "address", event.target.value)}
+                          placeholder="Адрес машиноместа"
+                        />
+                      </label>
+
+                      <label className="field">
+                        <span className="field__label">Цена</span>
+                        <input
+                          value={item.price}
+                          onChange={(event) => updateParkingSpot(item.id, "price", event.target.value)}
+                          inputMode="decimal"
+                          placeholder="Например, 1500000"
+                        />
+                      </label>
+
+                      <label className="field">
+                        <span className="field__label">Комиссия</span>
+                        <select
+                          value={item.commission}
+                          onChange={(event) => updateParkingSpot(item.id, "commission", event.target.value)}
+                        >
+                          <option value="">Не выбрано</option>
+                          {COMMISSION_OPTIONS.map((option) => (
+                            <option key={option} value={option}>
+                              {option}%
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+
+                      <label className="field">
+                        <span className="field__label">Залог</span>
+                        <input
+                          value={item.deposit}
+                          onChange={(event) => updateParkingSpot(item.id, "deposit", event.target.value)}
+                          inputMode="decimal"
+                          placeholder="Например, 50000"
+                        />
+                      </label>
+
+                      <label className="field">
+                        <span className="field__label">Квадратов</span>
+                        <input
+                          value={item.area}
+                          onChange={(event) => updateParkingSpot(item.id, "area", event.target.value)}
+                          inputMode="decimal"
+                          placeholder="Например, 14.5"
+                        />
+                      </label>
+
+                      <label className="field">
+                        <span className="field__label">Этаж</span>
+                        <input
+                          value={item.floor}
+                          onChange={(event) => updateParkingSpot(item.id, "floor", event.target.value)}
+                          placeholder="Например, -1"
+                        />
+                      </label>
+                    </div>
+
+                    <label className="toggle toggle--card">
+                      <input
+                        type="checkbox"
+                        checked={item.utilitiesIncluded}
+                        onChange={(event) =>
+                          updateParkingSpot(item.id, "utilitiesIncluded", event.target.checked)
+                        }
+                      />
+                      <span>К/У включены</span>
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="subform-section">
+              <div className="subform-section__header">
+                <div>
+                  <p className="eyebrow">Заготовка</p>
+                  <h3>Объекты</h3>
+                </div>
+                <button
+                  type="button"
+                  className="secondary-button secondary-button--compact"
+                  onClick={addPropertyObject}
+                >
+                  + Добавить объект
+                </button>
+              </div>
+
+              {formState.objects.length === 0 ? (
+                <div className="hint-card hint-card--compact">
+                  Блок объекта добавлен заранее. Позже можно будет расширить поля под твой формат.
+                </div>
+              ) : null}
+
+              <div className="subform-list">
+                {formState.objects.map((item, index) => (
+                  <div className="subform-card" key={item.id}>
+                    <div className="subform-card__header">
+                      <strong>Объект #{index + 1}</strong>
+                      <button
+                        type="button"
+                        className="link-button link-button--danger"
+                        onClick={() => removePropertyObject(item.id)}
+                      >
+                        Удалить
+                      </button>
+                    </div>
+
+                    <div className="subform-grid">
+                      <label className="field">
+                        <span className="field__label">Название</span>
+                        <input
+                          value={item.title}
+                          onChange={(event) =>
+                            updatePropertyObject(item.id, "title", event.target.value)
+                          }
+                          placeholder="Например, квартира 3Е"
+                        />
+                      </label>
+
+                      <label className="field field--full">
+                        <span className="field__label">Комментарий</span>
+                        <input
+                          value={item.notes}
+                          onChange={(event) =>
+                            updatePropertyObject(item.id, "notes", event.target.value)
+                          }
+                          placeholder="Описание заполним позже по твоему шаблону"
+                        />
+                      </label>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
             <button type="submit" className="primary-button" disabled={saving}>
               {saving
                 ? "Сохраняю..."
@@ -1148,14 +1857,17 @@ export default function App() {
 
         {error ? <div className="error-banner">{error}</div> : null}
 
-        <div className="filter-row">
-          {renderFilterButton("tasks", "Задачи")}
-          {renderFilterButton("inWork", "В работе")}
-          {renderFilterButton("duplicate", "Дубль")}
-          {renderFilterButton("callback", "Перезвонить")}
-          {renderFilterButton("noAnswer", "Нет ответа")}
-          {renderFilterButton("onlyClients", "Только клиенты")}
-          {renderFilterButton("archive", "Архив")}
+        <div className="filter-strip">
+          <div className="filter-strip__primary">{renderFilterButton("tasks", "Задачи")}</div>
+          <div className="filter-strip__divider" aria-hidden="true" />
+          <div className="filter-row">
+            {renderFilterButton("inWork", "В работе")}
+            {renderFilterButton("duplicate", "Дубль")}
+            {renderFilterButton("callback", "Перезвонить")}
+            {renderFilterButton("noAnswer", "Нет ответа")}
+            {renderFilterButton("onlyClients", "Только клиенты")}
+            {renderFilterButton("archive", "Архив")}
+          </div>
         </div>
 
         {loading ? <div className="hint-card">Загрузка клиентов...</div> : null}
@@ -1165,105 +1877,130 @@ export default function App() {
             <strong>{clients.length === 0 ? "Пока пусто" : "Ничего не найдено"}</strong>
             <p>
               {clients.length === 0
-                ? "Нажмите кнопку `+` справа снизу и добавьте первого клиента."
+                ? "Откройте меню справа снизу и выберите `+`, чтобы добавить первого клиента."
                 : "Снимите фильтр или переключитесь на другой."}
             </p>
           </div>
         ) : null}
 
         <div className="client-list client-list--table">
-          {visibleClients.map((client) => (
-            <article
-              className={`client-row client-row--${getClientPriorityTone(client)}`}
-              key={client.id}
-              onClick={() => openView(client)}
-            >
-              <button
-                type="button"
-                className="client-row__menu-trigger"
-                aria-label="Действия с клиентом"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  setConfirmDeleteClientId((current) =>
-                    current === client.id ? null : current,
-                  );
-                  setActiveMenuClientId((current) => (current === client.id ? null : client.id));
-                }}
-              >
-                <MoreIcon />
-              </button>
+          {visibleClients.map((client) => {
+            const clientTone = getClientPriorityTone(client);
+            const clientDueLabel = getClientDueLabel(client);
 
-              {activeMenuClientId === client.id ? (
-                <div
-                  className="client-row__menu"
+            return (
+              <article
+                className={`client-row client-row--${clientTone}`}
+                key={client.id}
+                onClick={() => openView(client)}
+              >
+                <button
+                  type="button"
+                  className="client-row__menu-trigger"
+                  aria-label="Действия с клиентом"
                   onClick={(event) => {
                     event.stopPropagation();
+                    setIsFabMenuOpen(false);
+                    setConfirmDeleteClientId((current) =>
+                      current === client.id ? null : current,
+                    );
+                    setActiveMenuClientId((current) => (current === client.id ? null : client.id));
                   }}
                 >
-                  {confirmDeleteClientId === client.id ? (
-                    <div className="client-row__menu-confirm">
-                      <strong>Удалить клиента?</strong>
-                      <div className="client-row__menu-confirm-actions">
+                  <MoreIcon />
+                </button>
+
+                {activeMenuClientId === client.id ? (
+                  <div
+                    className="client-row__menu"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                    }}
+                  >
+                    {confirmDeleteClientId === client.id ? (
+                      <div className="client-row__menu-confirm">
+                        <strong>Удалить клиента?</strong>
+                        <div className="client-row__menu-confirm-actions">
+                          <button
+                            type="button"
+                            className="client-row__menu-item client-row__menu-item--danger"
+                            onClick={() => void handleDeleteClient(client)}
+                            disabled={saving}
+                          >
+                            Да
+                          </button>
+                          <button
+                            type="button"
+                            className="client-row__menu-item"
+                            onClick={() => setConfirmDeleteClientId(null)}
+                          >
+                            Нет
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
                         <button
                           type="button"
-                          className="client-row__menu-item client-row__menu-item--danger"
-                          onClick={() => void handleDeleteClient(client)}
-                          disabled={saving}
+                          className="client-row__menu-item"
+                          onClick={() => openEditForm(client)}
                         >
-                          Да
+                          Редактировать
                         </button>
                         <button
                           type="button"
                           className="client-row__menu-item"
-                          onClick={() => setConfirmDeleteClientId(null)}
+                          onClick={() => void handleMarkArchived(client)}
+                          disabled={saving}
                         >
-                          Нет
+                          {client.is_archived ? "Из архива" : "В архив"}
                         </button>
-                      </div>
+                        <button
+                          type="button"
+                          className="client-row__menu-item client-row__menu-item--danger"
+                          onClick={() => setConfirmDeleteClientId(client.id)}
+                        >
+                          Удалить
+                        </button>
+                      </>
+                    )}
+                  </div>
+                ) : null}
+
+                <div className="client-row__body">
+                  <div className="client-row__top">
+                    <div className="client-row__main">
+                      <span className="client-row__label">ID: {client.client_number}</span>
+                      <strong>{client.name}</strong>
                     </div>
-                  ) : (
-                    <>
-                      <button
-                        type="button"
-                        className="client-row__menu-item"
-                        onClick={() => openEditForm(client)}
-                      >
-                        Редактировать
-                      </button>
-                      <button
-                        type="button"
-                        className="client-row__menu-item"
-                        onClick={() => void handleMarkArchived(client)}
-                        disabled={Boolean(client.is_archived) || saving}
-                      >
-                        В архив
-                      </button>
-                      <button
-                        type="button"
-                        className="client-row__menu-item client-row__menu-item--danger"
-                        onClick={() => setConfirmDeleteClientId(client.id)}
-                      >
-                        Удалить
-                      </button>
-                    </>
-                  )}
-                </div>
-              ) : null}
 
-              <div className="client-row__id">{client.client_number}</div>
-              <div className="client-row__body">
-                <div className="client-row__main">
-                  <strong>{client.name}</strong>
-                  <a href={`tel:${client.phone}`} onClick={(event) => event.stopPropagation()}>
-                    {client.phone}
-                  </a>
-                </div>
+                    <div className="client-row__location">
+                      <div className="client-row__address-line">{client.address || "Без адреса"}</div>
+                      {client.complex_name ? (
+                        <div className="client-row__complex">ЖК: {client.complex_name}</div>
+                      ) : null}
+                    </div>
+                  </div>
 
-                <div className="client-row__address-line">{client.address || "Без адреса"}</div>
-                <div className="client-row__meta">{getClientDueLabel(client)}</div>
-              </div>
-            </article>
-          ))}
+                  <div className="client-row__footer">
+                    <div className="client-row__flags">
+                      {client.is_proxy_phone ? <span className="badge">Подменный</span> : null}
+                      {client.parking_spots?.length ? (
+                        <span className="badge">Места: {client.parking_spots.length}</span>
+                      ) : null}
+                      {client.objects?.length ? (
+                        <span className="badge">Объекты: {client.objects.length}</span>
+                      ) : null}
+                    </div>
+
+                    <div className={`client-row__meta client-row__meta--${clientTone}`}>
+                      {client.callback_at ? `Перезвонить ${clientDueLabel || ""}`.trim() : clientDueLabel}
+                    </div>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
         </div>
       </section>
     );
@@ -1292,14 +2029,78 @@ export default function App() {
       </div>
 
       {screen === "list" ? (
-        <button
-          type="button"
-          className="fab"
-          onClick={openCreateForm}
-          aria-label="Добавить клиента"
+        <div
+          className="fab-menu"
+          style={{ "--search-keyboard-offset": `${searchKeyboardOffset}px` } as CSSProperties}
         >
-          +
-        </button>
+          <div className={`search-flyout ${showSearch ? "is-open" : ""}`}>
+            <div className="search-flyout__field">
+              <SearchIcon />
+              <input
+                ref={searchInputRef}
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Поиск по всей базе"
+              />
+              <button
+                type="button"
+                className="search-flyout__close"
+                onClick={closeSearch}
+                aria-label="Закрыть поиск"
+              >
+                <CloseIcon />
+              </button>
+            </div>
+          </div>
+
+          <div className={`fab-menu__actions ${isFabMenuOpen ? "is-open" : ""}`}>
+            {settings.listActionSearchEnabled ? (
+              <button
+                type="button"
+                className="fab fab--action"
+                onClick={openSearch}
+                aria-label="Поиск"
+              >
+                <SearchIcon />
+              </button>
+            ) : null}
+
+            {settings.listActionReactionEnabled ? (
+              <button
+                type="button"
+                className="fab fab--action"
+                onClick={() => {
+                  closeFloatingUi();
+                  setShowSearch(false);
+                  setScreen("settings");
+                }}
+                aria-label="Настройки меню"
+              >
+                <SmileIcon />
+              </button>
+            ) : null}
+
+            {settings.listActionCreateEnabled ? (
+              <button
+                type="button"
+                className="fab fab--action"
+                onClick={openCreateForm}
+                aria-label="Добавить клиента"
+              >
+                +
+              </button>
+            ) : null}
+          </div>
+
+          <button
+            type="button"
+            className={`fab ${isFabMenuOpen ? "fab--open" : ""}`}
+            onClick={() => setIsFabMenuOpen((current) => !current)}
+            aria-label="Открыть меню"
+          >
+            <MenuIcon />
+          </button>
+        </div>
       ) : null}
     </main>
   );

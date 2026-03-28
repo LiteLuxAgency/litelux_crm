@@ -4,6 +4,10 @@ import type {
   ClientInput,
   ClientRow,
   ClientUpdateInput,
+  ParkingSpotInput,
+  ParkingSpotRow,
+  PropertyObjectInput,
+  PropertyObjectRow,
   SettingsInput,
   SettingsRow,
   ReminderKind,
@@ -30,6 +34,16 @@ function normalizeNumber(value: unknown, fallback = 0): number {
   return fallback;
 }
 
+function normalizeNullableNumber(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") return null;
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return null;
+}
+
 function toIsoStringOrNull(value: unknown): string | null {
   if (value === null || value === undefined || value === "") return null;
   const date = new Date(String(value));
@@ -37,6 +51,37 @@ function toIsoStringOrNull(value: unknown): string | null {
     throw new Error("Некорректная дата перезвона");
   }
   return date.toISOString();
+}
+
+function normalizeParkingSpots(value: ParkingSpotInput[] | unknown): ParkingSpotRow[] {
+  if (!Array.isArray(value)) return [];
+
+  return value.map((item) => {
+    const entry = item && typeof item === "object" ? item : {};
+    return {
+      id: normalizeText((entry as { id?: unknown }).id, crypto.randomUUID()),
+      address: normalizeText((entry as { address?: unknown }).address),
+      price: normalizeNullableNumber((entry as { price?: unknown }).price),
+      commission: normalizeNullableNumber((entry as { commission?: unknown }).commission),
+      utilitiesIncluded: normalizeBoolean((entry as { utilitiesIncluded?: unknown }).utilitiesIncluded),
+      deposit: normalizeNullableNumber((entry as { deposit?: unknown }).deposit),
+      area: normalizeNullableNumber((entry as { area?: unknown }).area),
+      floor: normalizeText((entry as { floor?: unknown }).floor),
+    };
+  });
+}
+
+function normalizeObjects(value: PropertyObjectInput[] | unknown): PropertyObjectRow[] {
+  if (!Array.isArray(value)) return [];
+
+  return value.map((item) => {
+    const entry = item && typeof item === "object" ? item : {};
+    return {
+      id: normalizeText((entry as { id?: unknown }).id, crypto.randomUUID()),
+      title: normalizeText((entry as { title?: unknown }).title),
+      notes: normalizeText((entry as { notes?: unknown }).notes),
+    };
+  });
 }
 
 export class Repository {
@@ -78,6 +123,15 @@ export class Repository {
     if (input.telegramBotUsername !== undefined) payload.telegram_bot_username = normalizeText(input.telegramBotUsername);
     if (input.telegramChatId !== undefined) payload.telegram_chat_id = normalizeText(input.telegramChatId);
     if (input.telegramEnabled !== undefined) payload.telegram_enabled = normalizeBoolean(input.telegramEnabled);
+    if (input.listActionSearchEnabled !== undefined) {
+      payload.list_action_search_enabled = normalizeBoolean(input.listActionSearchEnabled, true);
+    }
+    if (input.listActionReactionEnabled !== undefined) {
+      payload.list_action_reaction_enabled = normalizeBoolean(input.listActionReactionEnabled, true);
+    }
+    if (input.listActionCreateEnabled !== undefined) {
+      payload.list_action_create_enabled = normalizeBoolean(input.listActionCreateEnabled, true);
+    }
 
     const { data, error } = await this.client.from("crm_settings").upsert(payload).select("*").single();
     if (error) throw error;
@@ -185,6 +239,8 @@ export class Repository {
   ): Record<string, unknown> {
     const nextName = input.name !== undefined ? normalizeText(input.name) : current?.name;
     const nextAddress = input.address !== undefined ? normalizeText(input.address) : current?.address;
+    const nextComplexName =
+      input.complexName !== undefined ? normalizeText(input.complexName) : current?.complex_name;
     const nextPhone = input.phone !== undefined ? normalizeText(input.phone) : current?.phone;
 
     if (requireAll) {
@@ -200,7 +256,11 @@ export class Repository {
     if (nextName !== undefined) payload.name = nextName;
     if (nextAddress !== undefined) payload.address = nextAddress;
     else if (requireAll) payload.address = "";
+    if (nextComplexName !== undefined) payload.complex_name = nextComplexName;
+    else if (requireAll) payload.complex_name = "";
     if (nextPhone !== undefined) payload.phone = nextPhone;
+    if (input.isProxyPhone !== undefined) payload.is_proxy_phone = normalizeBoolean(input.isProxyPhone);
+    else if (requireAll) payload.is_proxy_phone = false;
     if (input.commission !== undefined) payload.commission = normalizeNumber(input.commission);
     else if (requireAll) payload.commission = normalizeNumber(undefined, 0);
 
@@ -221,6 +281,12 @@ export class Repository {
 
     if (input.notes !== undefined) payload.notes = normalizeText(input.notes);
     else if (requireAll) payload.notes = "";
+
+    if (input.parkingSpots !== undefined) payload.parking_spots = normalizeParkingSpots(input.parkingSpots);
+    else if (requireAll) payload.parking_spots = [];
+
+    if (input.objects !== undefined) payload.objects = normalizeObjects(input.objects);
+    else if (requireAll) payload.objects = [];
 
     if (input.callbackAt !== undefined) {
       payload.callback_at = toIsoStringOrNull(callbackAtRaw);

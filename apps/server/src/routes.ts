@@ -4,10 +4,29 @@ import type { Repository } from "./repository.js";
 import type { ReminderScheduler } from "./scheduler.js";
 import type { TelegramManager } from "./telegram-manager.js";
 
+const parkingSpotSchema = z.object({
+  id: z.string().trim().optional(),
+  address: z.string().trim().optional(),
+  price: z.number().nullable().optional(),
+  commission: z.number().nullable().optional(),
+  utilitiesIncluded: z.boolean().optional(),
+  deposit: z.number().nullable().optional(),
+  area: z.number().nullable().optional(),
+  floor: z.string().trim().optional(),
+});
+
+const propertyObjectSchema = z.object({
+  id: z.string().trim().optional(),
+  title: z.string().trim().optional(),
+  notes: z.string().trim().optional(),
+});
+
 const clientSchema = z.object({
   name: z.string().trim().min(1, "Укажите имя клиента"),
   address: z.string().trim().optional(),
+  complexName: z.string().trim().optional(),
   phone: z.string().trim().min(1, "Укажите телефон"),
+  isProxyPhone: z.boolean().optional(),
   commission: z.number().nonnegative().nullable().optional(),
   isDuplicate: z.boolean().optional(),
   isExclusive: z.boolean().optional(),
@@ -17,12 +36,17 @@ const clientSchema = z.object({
   callbackAt: z.string().trim().nullable().optional(),
   noAnswer: z.boolean().optional(),
   notes: z.string().trim().optional(),
+  parkingSpots: z.array(parkingSpotSchema).optional(),
+  objects: z.array(propertyObjectSchema).optional(),
 });
 
 const settingsSchema = z.object({
   telegramBotToken: z.string().trim().optional(),
   telegramChatId: z.string().trim().optional(),
   telegramEnabled: z.boolean().optional(),
+  listActionSearchEnabled: z.boolean().optional(),
+  listActionReactionEnabled: z.boolean().optional(),
+  listActionCreateEnabled: z.boolean().optional(),
 });
 
 export function createRoutes(
@@ -45,6 +69,9 @@ export function createRoutes(
         telegramChatId: settings.telegram_chat_id,
         telegramEnabled: settings.telegram_enabled,
         telegramBotTokenPresent: Boolean(settings.telegram_bot_token.trim()),
+        listActionSearchEnabled: settings.list_action_search_enabled,
+        listActionReactionEnabled: settings.list_action_reaction_enabled,
+        listActionCreateEnabled: settings.list_action_create_enabled,
         createdAt: settings.created_at,
         updatedAt: settings.updated_at,
       });
@@ -64,6 +91,9 @@ export function createRoutes(
         telegramChatId: settings.telegram_chat_id,
         telegramEnabled: settings.telegram_enabled,
         telegramBotTokenPresent: Boolean(settings.telegram_bot_token.trim()),
+        listActionSearchEnabled: settings.list_action_search_enabled,
+        listActionReactionEnabled: settings.list_action_reaction_enabled,
+        listActionCreateEnabled: settings.list_action_create_enabled,
         createdAt: settings.created_at,
         updatedAt: settings.updated_at,
       });
