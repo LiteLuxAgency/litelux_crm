@@ -1,9 +1,25 @@
 import type { Repository } from "./repository.js";
 import type { TelegramManager } from "./telegram-manager.js";
 
+function isTransientNetworkError(error: unknown): boolean {
+  const text = error instanceof Error ? error.stack || error.message : String(error ?? "");
+  const normalized = text.toLowerCase();
+
+  return (
+    normalized.includes("fetch failed") ||
+    normalized.includes("connecttimeouterror") ||
+    normalized.includes("und_err_connect_timeout") ||
+    normalized.includes("etimedout") ||
+    normalized.includes("econnreset") ||
+    normalized.includes("enotfound") ||
+    normalized.includes("eai_again")
+  );
+}
+
 export class ReminderScheduler {
   private timer: NodeJS.Timeout | null = null;
   private running = false;
+  private lastNetworkWarningAt = 0;
 
   constructor(
     private readonly repository: Repository,
@@ -15,11 +31,11 @@ export class ReminderScheduler {
     if (this.timer) return;
     this.timer = setInterval(() => {
       void this.tick().catch((error) => {
-        console.error("Ошибка планировщика напоминаний:", error);
+        this.logTickError(error);
       });
     }, this.intervalMs);
     void this.tick().catch((error) => {
-      console.error("Ошибка планировщика напоминаний:", error);
+      this.logTickError(error);
     });
   }
 
@@ -52,6 +68,19 @@ export class ReminderScheduler {
     } finally {
       this.running = false;
     }
+  }
+
+  private logTickError(error: unknown): void {
+    if (isTransientNetworkError(error)) {
+      const now = Date.now();
+      if (now - this.lastNetworkWarningAt >= 60_000) {
+        this.lastNetworkWarningAt = now;
+        console.warn("Планировщик напоминаний: временная сетевая ошибка. Повторю автоматически.");
+      }
+      return;
+    }
+
+    console.error("Ошибка планировщика напоминаний:", error);
   }
 }
 

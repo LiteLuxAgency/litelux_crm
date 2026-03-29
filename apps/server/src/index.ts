@@ -55,6 +55,7 @@ async function main(): Promise<void> {
   const telegramManager = new TelegramManager(repository);
   const scheduler = new ReminderScheduler(repository, telegramManager, config.REMINDER_CHECK_INTERVAL_MS);
   const app = express();
+  let lastTelegramSyncWarningAt = 0;
 
   app.disable("x-powered-by");
   app.use(
@@ -93,13 +94,26 @@ async function main(): Promise<void> {
       try {
         await telegramManager.sync(settings);
       } catch (error) {
-        console.error("Не удалось запустить Telegram-бота при старте:", error);
+        if (isTelegramNetworkError(error)) {
+          console.warn("Telegram API временно недоступен при старте. Повторная синхронизация будет позже.");
+        } else {
+          console.error("Не удалось запустить Telegram-бота при старте:", error);
+        }
       }
 
       scheduler.start();
 
       setInterval(() => {
         void telegramManager.sync().catch((error) => {
+          if (isTelegramNetworkError(error)) {
+            const now = Date.now();
+            if (now - lastTelegramSyncWarningAt >= 60_000) {
+              lastTelegramSyncWarningAt = now;
+              console.warn("Telegram API временно недоступен. Повторная синхронизация будет автоматически.");
+            }
+            return;
+          }
+
           console.error("Не удалось синхронизировать Telegram-бота:", error);
         });
       }, config.SETTINGS_SYNC_INTERVAL_MS);

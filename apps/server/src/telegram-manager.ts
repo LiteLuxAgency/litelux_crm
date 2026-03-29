@@ -84,6 +84,7 @@ export class TelegramManager {
   private activeToken: string | null = null;
   private activeChatId: string | null = null;
   private pollingBlocked = false;
+  private lastNetworkWarningAt = 0;
 
   constructor(private readonly repository: Repository) {}
 
@@ -205,6 +206,15 @@ export class TelegramManager {
       await telegram.sendMessage(this.activeChatId, text);
       return true;
     } catch (error) {
+      if (isTelegramNetworkError(error)) {
+        const now = Date.now();
+        if (now - this.lastNetworkWarningAt >= 60_000) {
+          this.lastNetworkWarningAt = now;
+          console.warn("Не удалось отправить Telegram-уведомление из-за временной сетевой ошибки. Повторю позже.");
+        }
+        return false;
+      }
+
       console.error("Не удалось отправить Telegram-уведомление:", error);
       return false;
     }
