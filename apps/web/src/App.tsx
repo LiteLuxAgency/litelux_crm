@@ -3,7 +3,6 @@ import { getTelegramWebApp, initTelegramApp, isTelegramMiniApp } from "./lib/tel
 
 type Screen = "list" | "view" | "create" | "settings";
 type CreatePanel = "objects" | "passport" | "comment" | null;
-type PickerPanel = "status" | "phoneKind" | null;
 
 type ParkingSpot = {
   id: string;
@@ -166,15 +165,6 @@ const initialSettingsState: SettingsFormState = {
   listActionReactionEnabled: true,
   listActionCreateEnabled: true,
 };
-
-const STATUS_MODE_OPTIONS: Array<{ value: ClientStatusMode; label: string }> = [
-  { value: "none", label: "Без статуса" },
-  { value: "duplicate", label: "Дубль" },
-  { value: "exclusive", label: "Эксклюзив" },
-  { value: "noAnswer", label: "Нет ответа" },
-  { value: "onlyClients", label: "Только клиенты" },
-  { value: "callback", label: "Перезвонить" },
-];
 
 function ArrowLeftIcon() {
   return (
@@ -446,23 +436,6 @@ function normalizePhoneInput(value: string) {
   return result;
 }
 
-function formatCallbackDateChip(value: string) {
-  if (!value) {
-    return "Дата";
-  }
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return "Дата";
-  }
-
-  return new Intl.DateTimeFormat("ru-RU", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(date);
-}
-
 function normalizeClientParkingSpots(items: ParkingSpot[] | null | undefined): ParkingSpotFormState[] {
   return (items ?? []).map((item) => ({
     id: item.id || createLocalId(),
@@ -673,17 +646,6 @@ function getClientDueLabel(client: Client, now = Date.now()): string | null {
   return `через ${formatDurationLabel(diffMs)}`;
 }
 
-function applyStatusMode(mode: ClientStatusMode, callbackAt = "") {
-  return {
-    statusMode: mode,
-    isDuplicate: mode === "duplicate",
-    isExclusive: mode === "exclusive",
-    onlyClients: mode === "onlyClients",
-    noAnswer: mode === "noAnswer",
-    callbackAt: mode === "callback" ? callbackAt : "",
-  };
-}
-
 function getClientStatusLabel(client: Client): string | null {
   const mode = getClientStatusMode(client);
   if (mode === "none") return null;
@@ -741,7 +703,6 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchKeyboardOffset, setSearchKeyboardOffset] = useState(0);
   const [openCreatePanel, setOpenCreatePanel] = useState<CreatePanel>(null);
-  const [openPicker, setOpenPicker] = useState<PickerPanel>(null);
   const sortedClients = sortClientsByPriority(clients);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
@@ -855,31 +816,10 @@ export default function App() {
     };
   }, [activeMenuClientId]);
 
-  useEffect(() => {
-    if (!openPicker) {
-      return;
-    }
-
-    const handlePointerDown = (event: PointerEvent) => {
-      const target = event.target as HTMLElement | null;
-      if (!target) return;
-      if (target.closest(".picker")) {
-        return;
-      }
-      setOpenPicker(null);
-    };
-
-    document.addEventListener("pointerdown", handlePointerDown);
-    return () => {
-      document.removeEventListener("pointerdown", handlePointerDown);
-    };
-  }, [openPicker]);
-
   function closeFloatingUi() {
     setActiveMenuClientId(null);
     setConfirmDeleteClientId(null);
     setIsFabMenuOpen(false);
-    setOpenPicker(null);
   }
 
   function openSearch() {
@@ -1057,7 +997,6 @@ export default function App() {
     setSelectedClientId(null);
     setFormState(initialFormState);
     setOpenCreatePanel(null);
-    setOpenPicker(null);
     setScreen("create");
     window.requestAnimationFrame(() => {
       document.querySelector(".app-shell__content")?.scrollTo({ top: 0, behavior: "smooth" });
@@ -1078,7 +1017,6 @@ export default function App() {
     setEditingClientId(client.id);
     setFormState(clientToFormState(client));
     setOpenCreatePanel(null);
-    setOpenPicker(null);
     setScreen("create");
     window.requestAnimationFrame(() => {
       document.querySelector(".app-shell__content")?.scrollTo({ top: 0, behavior: "smooth" });
@@ -1168,18 +1106,6 @@ export default function App() {
     } finally {
       setSaving(false);
     }
-  }
-
-  function handleStatusModeChange(mode: ClientStatusMode) {
-    setFormState((current) => ({
-      ...current,
-      ...applyStatusMode(
-        mode,
-        mode === "callback"
-          ? current.callbackAt || toDateTimeLocalValue(new Date().toISOString())
-          : current.callbackAt,
-      ),
-    }));
   }
 
   function addParkingSpot() {
@@ -1524,10 +1450,6 @@ export default function App() {
 
     if (screen === "create") {
       const isEditing = Boolean(editingClientId);
-      const selectedStatusOption =
-        STATUS_MODE_OPTIONS.find((option) => option.value === formState.statusMode) ??
-        STATUS_MODE_OPTIONS[0];
-      const phoneTypeLabel = formState.isProxyPhone ? "Подменный" : "Прямой";
       const editingClientNumber =
         clients.find((client) => client.id === editingClientId)?.client_number ?? "";
 
@@ -1556,42 +1478,25 @@ export default function App() {
             <div className="field field--phone">
               <span className="field__label">Номер телефона</span>
               <div className="field__phone-stack">
-                <div className={`picker ${openPicker === "phoneKind" ? "is-open" : ""}`}>
+                <div className="field__choice-row">
                   <button
                     type="button"
-                    className="picker__button"
+                    className={`choice-button ${!formState.isProxyPhone ? "is-active" : ""}`}
                     onClick={() =>
-                      setOpenPicker((current) => (current === "phoneKind" ? null : "phoneKind"))
+                      setFormState((current) => ({ ...current, isProxyPhone: false }))
                     }
                   >
-                    <span>{phoneTypeLabel}</span>
-                    <span className="picker__chevron" aria-hidden="true" />
+                    Прямой
                   </button>
-
-                  {openPicker === "phoneKind" ? (
-                    <div className="picker__panel">
-                      <button
-                        type="button"
-                        className={`picker__option ${!formState.isProxyPhone ? "is-active" : ""}`}
-                        onClick={() => {
-                          setFormState((current) => ({ ...current, isProxyPhone: false }));
-                          setOpenPicker(null);
-                        }}
-                      >
-                        Прямой
-                      </button>
-                      <button
-                        type="button"
-                        className={`picker__option ${formState.isProxyPhone ? "is-active" : ""}`}
-                        onClick={() => {
-                          setFormState((current) => ({ ...current, isProxyPhone: true }));
-                          setOpenPicker(null);
-                        }}
-                      >
-                        Подменный
-                      </button>
-                    </div>
-                  ) : null}
+                  <button
+                    type="button"
+                    className={`choice-button ${formState.isProxyPhone ? "is-active" : ""}`}
+                    onClick={() =>
+                      setFormState((current) => ({ ...current, isProxyPhone: true }))
+                    }
+                  >
+                    Подменный
+                  </button>
                 </div>
 
                 <input
@@ -1623,58 +1528,6 @@ export default function App() {
                 }
               />
             </label>
-
-            <div className={`field field--full ${formState.statusMode === "callback" ? "field--status-callback" : ""}`}>
-              <span className="field__label">Статус</span>
-              <div className={`picker ${openPicker === "status" ? "is-open" : ""}`}>
-                <button
-                  type="button"
-                  className={`picker__button ${formState.statusMode === "callback" ? "picker__button--callback" : ""}`}
-                  onClick={() =>
-                    setOpenPicker((current) => (current === "status" ? null : "status"))
-                  }
-                >
-                  <span>{selectedStatusOption.label}</span>
-                  <span className="picker__chevron" aria-hidden="true" />
-                </button>
-
-                {openPicker === "status" ? (
-                  <div className="picker__panel">
-                    {STATUS_MODE_OPTIONS.map((option) => (
-                      <button
-                        key={option.value}
-                        type="button"
-                        className={`picker__option ${
-                          formState.statusMode === option.value ? "is-active" : ""
-                        }`}
-                        onClick={() => {
-                          handleStatusModeChange(option.value);
-                          setOpenPicker(null);
-                        }}
-                      >
-                        {option.label}
-                      </button>
-                    ))}
-                  </div>
-                ) : null}
-              </div>
-
-              {formState.statusMode === "callback" ? (
-                <label className="date-chip">
-                  <span>{formatCallbackDateChip(formState.callbackAt)}</span>
-                  <input
-                    type="date"
-                    value={formState.callbackAt ? formState.callbackAt.slice(0, 10) : ""}
-                    onChange={(event) =>
-                      setFormState((current) => ({
-                        ...current,
-                        callbackAt: event.target.value ? `${event.target.value}T00:00` : "",
-                      }))
-                    }
-                  />
-                </label>
-              ) : null}
-            </div>
 
             <div className="accordion-stack">
               <section className={`accordion-card ${openCreatePanel === "objects" ? "is-open" : ""}`}>
@@ -1839,15 +1692,6 @@ export default function App() {
           </div>
         ) : null}
 
-        {activeMenuClientId ? (
-          <button
-            type="button"
-            className="client-row__menu-overlay"
-            aria-label="Закрыть меню карточки"
-            onClick={closeFloatingUi}
-          />
-        ) : null}
-
         <div className="client-list client-list--table">
           {visibleClients.map((client) => {
             const clientTone = getClientPriorityTone(client);
@@ -1915,6 +1759,7 @@ export default function App() {
                           type="button"
                           className="client-row__menu-item"
                           onClick={(event) => {
+                            event.preventDefault();
                             event.stopPropagation();
                             openEditForm(client);
                           }}
