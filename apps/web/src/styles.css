@@ -733,6 +733,13 @@ a {
   gap: 6px;
 }
 
+.detail-card__location-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: start;
+}
+
 .detail-card__id-label {
   color: rgba(255, 225, 191, 0.58);
   font-size: 0.82rem;
@@ -761,8 +768,8 @@ a {
 .detail-card__meta {
   color: var(--accent-strong);
   font-size: 0.84rem;
-  text-align: left;
-  margin-top: -2px;
+  text-align: right;
+  margin-top: 0;
 }
 
 .detail-card__meta--danger {

@@ -1252,6 +1252,8 @@ export default function App() {
   function renderContent() {
     if (screen === "view" && selectedClient) {
       const clientLink = normalizeExternalLink(selectedClient.link);
+      const selectedClientStatus = getClientStatusLabel(selectedClient);
+      const selectedClientTone = getClientPriorityTone(selectedClient);
 
       return (
         <section className="sheet sheet--view">
@@ -1272,7 +1274,14 @@ export default function App() {
                   <h2>{selectedClient.name}</h2>
                 </div>
                 <div className="detail-card__info detail-card__info--location">
-                  <div className="detail-card__address">{selectedClient.address || "Без адреса"}</div>
+                  <div className="detail-card__location-row">
+                    <div className="detail-card__address">{selectedClient.address || "Без адреса"}</div>
+                    {selectedClientStatus ? (
+                      <div className={`detail-card__meta detail-card__meta--${selectedClientTone}`}>
+                        {selectedClientStatus}
+                      </div>
+                    ) : null}
+                  </div>
                   {selectedClient.complex_name ? (
                     <div className="detail-card__complex">ЖК: {selectedClient.complex_name}</div>
                   ) : null}
