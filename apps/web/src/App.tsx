@@ -3,6 +3,7 @@ import { getTelegramWebApp, initTelegramApp, isTelegramMiniApp } from "./lib/tel
 
 type Screen = "list" | "view" | "create" | "settings";
 type CreatePanel = "preferences" | "objects" | "passport" | "comment" | null;
+type PickerPanel = "status" | null;
 
 type ParkingSpot = {
   id: string;
@@ -137,8 +138,6 @@ function createPropertyObjectFormState(): PropertyObjectFormState {
     notes: "",
   };
 }
-
-const COMMISSION_OPTIONS = Array.from({ length: 100 }, (_, index) => String(index + 1));
 
 const initialFormState: ClientFormState = {
   name: "",
@@ -397,6 +396,28 @@ function toNumberOrNull(value: string): number | null {
   if (!value.trim()) return null;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+function sanitizeCommissionInput(value: string) {
+  const normalized = value.replace(",", ".").replace(/[^0-9.]/g, "");
+  const [integerPart = "", ...rest] = normalized.split(".");
+  const decimalPart = rest.join("");
+  const merged = decimalPart ? `${integerPart}.${decimalPart.slice(0, 2)}` : integerPart;
+
+  if (!merged) {
+    return "";
+  }
+
+  const parsed = Number(merged);
+  if (!Number.isFinite(parsed)) {
+    return "";
+  }
+
+  if (parsed > 100) {
+    return "100";
+  }
+
+  return merged;
 }
 
 function normalizeClientParkingSpots(items: ParkingSpot[] | null | undefined): ParkingSpotFormState[] {
@@ -678,6 +699,7 @@ export default function App() {
   const [searchKeyboardOffset, setSearchKeyboardOffset] = useState(0);
   const [openCreatePanel, setOpenCreatePanel] = useState<CreatePanel>("preferences");
   const [isObjectMenuOpen, setIsObjectMenuOpen] = useState(false);
+  const [openPicker, setOpenPicker] = useState<PickerPanel>(null);
   const sortedClients = sortClientsByPriority(clients);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
@@ -791,10 +813,32 @@ export default function App() {
     };
   }, [activeMenuClientId]);
 
+  useEffect(() => {
+    if (!openPicker) {
+      return;
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+      if (target.closest(".picker")) {
+        return;
+      }
+      setOpenPicker(null);
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, [openPicker]);
+
   function closeFloatingUi() {
     setActiveMenuClientId(null);
     setConfirmDeleteClientId(null);
     setIsFabMenuOpen(false);
+    setOpenPicker(null);
+    setIsObjectMenuOpen(false);
   }
 
   function openSearch() {
@@ -973,6 +1017,7 @@ export default function App() {
     setFormState(initialFormState);
     setOpenCreatePanel(null);
     setIsObjectMenuOpen(false);
+    setOpenPicker(null);
     setScreen("create");
     window.requestAnimationFrame(() => {
       document.querySelector(".app-shell__content")?.scrollTo({ top: 0, behavior: "smooth" });
@@ -994,6 +1039,7 @@ export default function App() {
     setFormState(clientToFormState(client));
     setOpenCreatePanel(null);
     setIsObjectMenuOpen(false);
+    setOpenPicker(null);
     setScreen("create");
     window.requestAnimationFrame(() => {
       document.querySelector(".app-shell__content")?.scrollTo({ top: 0, behavior: "smooth" });
@@ -1441,6 +1487,9 @@ export default function App() {
 
     if (screen === "create") {
       const isEditing = Boolean(editingClientId);
+      const selectedStatusOption =
+        STATUS_MODE_OPTIONS.find((option) => option.value === formState.statusMode) ??
+        STATUS_MODE_OPTIONS[0];
 
       return (
         <section className="sheet">
@@ -1521,39 +1570,55 @@ export default function App() {
 
             <label className="field">
               <span className="field__label">Комиссия</span>
-              <select
+              <input
+                type="text"
+                inputMode="decimal"
+                placeholder="0.1 - 100"
                 value={formState.commission}
                 onChange={(event) =>
                   setFormState((current) => ({
                     ...current,
-                    commission: event.target.value,
+                    commission: sanitizeCommissionInput(event.target.value),
                   }))
                 }
-              >
-                <option value="">Не выбрано</option>
-                {COMMISSION_OPTIONS.map((option) => (
-                  <option key={option} value={option}>
-                    {option}%
-                  </option>
-                ))}
-              </select>
+              />
             </label>
 
-            <label className="field field--full">
+            <div className="field field--full">
               <span className="field__label">Статус</span>
-              <select
-                value={formState.statusMode}
-                onChange={(event) =>
-                  handleStatusModeChange(event.target.value as ClientStatusMode)
-                }
-              >
-                {STATUS_MODE_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+              <div className={`picker ${openPicker === "status" ? "is-open" : ""}`}>
+                <button
+                  type="button"
+                  className="picker__button"
+                  onClick={() =>
+                    setOpenPicker((current) => (current === "status" ? null : "status"))
+                  }
+                >
+                  <span>{selectedStatusOption.label}</span>
+                  <span className="picker__chevron" aria-hidden="true" />
+                </button>
+
+                {openPicker === "status" ? (
+                  <div className="picker__panel">
+                    {STATUS_MODE_OPTIONS.map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        className={`picker__option ${
+                          formState.statusMode === option.value ? "is-active" : ""
+                        }`}
+                        onClick={() => {
+                          handleStatusModeChange(option.value);
+                          setOpenPicker(null);
+                        }}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            </div>
 
             {formState.statusMode === "callback" ? (
               <label className="field field--full">
@@ -1809,7 +1874,7 @@ export default function App() {
         <div className="client-list client-list--table">
           {visibleClients.map((client) => {
             const clientTone = getClientPriorityTone(client);
-            const clientDueLabel = getClientDueLabel(client);
+            const clientStatusLabel = getClientStatusLabel(client);
 
             return (
               <article
@@ -1866,14 +1931,20 @@ export default function App() {
                         <button
                           type="button"
                           className="client-row__menu-item"
-                          onClick={() => openEditForm(client)}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            openEditForm(client);
+                          }}
                         >
                           Редактировать
                         </button>
                         <button
                           type="button"
                           className="client-row__menu-item"
-                          onClick={() => void handleMarkArchived(client)}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            void handleMarkArchived(client);
+                          }}
                           disabled={saving}
                         >
                           {client.is_archived ? "Из архива" : "В архив"}
@@ -1881,7 +1952,10 @@ export default function App() {
                         <button
                           type="button"
                           className="client-row__menu-item client-row__menu-item--danger"
-                          onClick={() => setConfirmDeleteClientId(client.id)}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setConfirmDeleteClientId(client.id);
+                          }}
                         >
                           Удалить
                         </button>
@@ -1891,26 +1965,20 @@ export default function App() {
                 ) : null}
 
                 <div className="client-row__body">
-                  <div className="client-row__top">
-                    <div className="client-row__main">
-                      <span className="client-row__label">ID: {client.client_number}</span>
-                      <strong>{client.name}</strong>
-                    </div>
-
-                    <div className="client-row__location">
-                      <div className="client-row__location-top">
-                        <div className="client-row__address-line">{client.address || "Без адреса"}</div>
-                        <div className={`client-row__meta client-row__meta--${clientTone}`}>
-                          {client.callback_at
-                            ? `Перезвонить ${clientDueLabel || ""}`.trim()
-                            : clientDueLabel}
-                        </div>
-                      </div>
-                      {client.complex_name ? (
-                        <div className="client-row__complex">ЖК: {client.complex_name}</div>
-                      ) : null}
-                    </div>
+                  <div className="client-row__content">
+                    <span className="client-row__label">ID: {client.client_number}</span>
+                    <strong>{client.name}</strong>
+                    <div className="client-row__address-line">{client.address || "Без адреса"}</div>
+                    {client.complex_name ? (
+                      <div className="client-row__complex">ЖК: {client.complex_name}</div>
+                    ) : null}
                   </div>
+
+                  {clientStatusLabel ? (
+                    <div className={`client-row__meta client-row__meta--${clientTone}`}>
+                      {clientStatusLabel}
+                    </div>
+                  ) : null}
 
                   <div className="client-row__footer">
                     <div className="client-row__flags">
