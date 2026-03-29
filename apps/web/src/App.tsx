@@ -2,8 +2,8 @@ import { CSSProperties, FormEvent, TouchEvent, startTransition, useEffect, useRe
 import { getTelegramWebApp, initTelegramApp, isTelegramMiniApp } from "./lib/telegram";
 
 type Screen = "list" | "view" | "create" | "settings";
-type CreatePanel = "preferences" | "objects" | "passport" | "comment" | null;
-type PickerPanel = "status" | null;
+type CreatePanel = "objects" | "passport" | "comment" | null;
+type PickerPanel = "status" | "phoneKind" | null;
 
 type ParkingSpot = {
   id: string;
@@ -420,6 +420,49 @@ function sanitizeCommissionInput(value: string) {
   return merged;
 }
 
+function normalizePhoneInput(value: string) {
+  const digits = value.replace(/\D/g, "");
+  if (!digits) {
+    return "";
+  }
+
+  let local = digits;
+  if (local.length >= 11 && (local.startsWith("7") || local.startsWith("8"))) {
+    local = local.slice(1);
+  }
+
+  local = local.slice(0, 10);
+
+  const part1 = local.slice(0, 3);
+  const part2 = local.slice(3, 6);
+  const part3 = local.slice(6, 8);
+  const part4 = local.slice(8, 10);
+
+  let result = "+7";
+  if (part1) result += ` ${part1}`;
+  if (part2) result += ` ${part2}`;
+  if (part3) result += ` ${part3}`;
+  if (part4) result += ` ${part4}`;
+  return result;
+}
+
+function formatCallbackDateChip(value: string) {
+  if (!value) {
+    return "Дата";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "Дата";
+  }
+
+  return new Intl.DateTimeFormat("ru-RU", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
+}
+
 function normalizeClientParkingSpots(items: ParkingSpot[] | null | undefined): ParkingSpotFormState[] {
   return (items ?? []).map((item) => ({
     id: item.id || createLocalId(),
@@ -697,8 +740,7 @@ export default function App() {
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchKeyboardOffset, setSearchKeyboardOffset] = useState(0);
-  const [openCreatePanel, setOpenCreatePanel] = useState<CreatePanel>("preferences");
-  const [isObjectMenuOpen, setIsObjectMenuOpen] = useState(false);
+  const [openCreatePanel, setOpenCreatePanel] = useState<CreatePanel>(null);
   const [openPicker, setOpenPicker] = useState<PickerPanel>(null);
   const sortedClients = sortClientsByPriority(clients);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
@@ -838,7 +880,6 @@ export default function App() {
     setConfirmDeleteClientId(null);
     setIsFabMenuOpen(false);
     setOpenPicker(null);
-    setIsObjectMenuOpen(false);
   }
 
   function openSearch() {
@@ -1016,7 +1057,6 @@ export default function App() {
     setSelectedClientId(null);
     setFormState(initialFormState);
     setOpenCreatePanel(null);
-    setIsObjectMenuOpen(false);
     setOpenPicker(null);
     setScreen("create");
     window.requestAnimationFrame(() => {
@@ -1038,7 +1078,6 @@ export default function App() {
     setEditingClientId(client.id);
     setFormState(clientToFormState(client));
     setOpenCreatePanel(null);
-    setIsObjectMenuOpen(false);
     setOpenPicker(null);
     setScreen("create");
     window.requestAnimationFrame(() => {
@@ -1098,7 +1137,6 @@ export default function App() {
     setSelectedClientId(null);
     setEditingClientId(null);
     setOpenCreatePanel(null);
-    setIsObjectMenuOpen(false);
     setFormState(initialFormState);
   }
 
@@ -1183,7 +1221,6 @@ export default function App() {
         },
       ],
     }));
-    setIsObjectMenuOpen(false);
     setOpenCreatePanel("objects");
   }
 
@@ -1490,19 +1527,16 @@ export default function App() {
       const selectedStatusOption =
         STATUS_MODE_OPTIONS.find((option) => option.value === formState.statusMode) ??
         STATUS_MODE_OPTIONS[0];
+      const phoneTypeLabel = formState.isProxyPhone ? "Подменный" : "Прямой";
+      const editingClientNumber =
+        clients.find((client) => client.id === editingClientId)?.client_number ?? "";
 
       return (
         <section className="sheet">
           <div className="sheet__header">
             <div>
-              <p className="eyebrow">{isEditing ? "Редактирование" : "Новый клиент"}</p>
-              <h2>
-                {isEditing
-                  ? `Изменение клиента #${
-                      clients.find((client) => client.id === editingClientId)?.client_number ?? ""
-                    }`
-                  : "Добавление собственника"}
-              </h2>
+              {isEditing ? <div className="sheet__id-label">ID: {editingClientNumber}</div> : null}
+              {!isEditing ? <h2>Добавление собственника</h2> : null}
             </div>
           </div>
 
@@ -1519,52 +1553,58 @@ export default function App() {
               />
             </label>
 
-            <label className="field">
-              <span className="field__label">Адрес</span>
-              <input
-                value={formState.address}
-                onChange={(event) =>
-                  setFormState((current) => ({ ...current, address: event.target.value }))
-                }
-                placeholder="Улица, дом, район"
-              />
-            </label>
-
-            <label className="field">
-              <span className="field__label">ЖК</span>
-              <input
-                value={formState.complexName}
-                onChange={(event) =>
-                  setFormState((current) => ({ ...current, complexName: event.target.value }))
-                }
-                placeholder="Название жилого комплекса"
-              />
-            </label>
-
             <div className="field field--phone">
               <span className="field__label">Номер телефона</span>
-              <div className="field__inline">
+              <div className="field__phone-stack">
+                <div className={`picker ${openPicker === "phoneKind" ? "is-open" : ""}`}>
+                  <button
+                    type="button"
+                    className="picker__button"
+                    onClick={() =>
+                      setOpenPicker((current) => (current === "phoneKind" ? null : "phoneKind"))
+                    }
+                  >
+                    <span>{phoneTypeLabel}</span>
+                    <span className="picker__chevron" aria-hidden="true" />
+                  </button>
+
+                  {openPicker === "phoneKind" ? (
+                    <div className="picker__panel">
+                      <button
+                        type="button"
+                        className={`picker__option ${!formState.isProxyPhone ? "is-active" : ""}`}
+                        onClick={() => {
+                          setFormState((current) => ({ ...current, isProxyPhone: false }));
+                          setOpenPicker(null);
+                        }}
+                      >
+                        Прямой
+                      </button>
+                      <button
+                        type="button"
+                        className={`picker__option ${formState.isProxyPhone ? "is-active" : ""}`}
+                        onClick={() => {
+                          setFormState((current) => ({ ...current, isProxyPhone: true }));
+                          setOpenPicker(null);
+                        }}
+                      >
+                        Подменный
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+
                 <input
                   required
                   value={formState.phone}
                   onChange={(event) =>
-                    setFormState((current) => ({ ...current, phone: event.target.value }))
+                    setFormState((current) => ({
+                      ...current,
+                      phone: normalizePhoneInput(event.target.value),
+                    }))
                   }
-                  placeholder="+7 999 123-45-67"
+                  placeholder="+7 999 123 45 67"
                 />
-                <label className="toggle toggle--compact">
-                  <input
-                    type="checkbox"
-                    checked={formState.isProxyPhone}
-                    onChange={(event) =>
-                      setFormState((current) => ({
-                        ...current,
-                        isProxyPhone: event.target.checked,
-                      }))
-                    }
-                  />
-                  <span>Подменный</span>
-                </label>
               </div>
             </div>
 
@@ -1584,12 +1624,12 @@ export default function App() {
               />
             </label>
 
-            <div className="field field--full">
+            <div className={`field field--full ${formState.statusMode === "callback" ? "field--status-callback" : ""}`}>
               <span className="field__label">Статус</span>
               <div className={`picker ${openPicker === "status" ? "is-open" : ""}`}>
                 <button
                   type="button"
-                  className="picker__button"
+                  className={`picker__button ${formState.statusMode === "callback" ? "picker__button--callback" : ""}`}
                   onClick={() =>
                     setOpenPicker((current) => (current === "status" ? null : "status"))
                   }
@@ -1618,56 +1658,25 @@ export default function App() {
                   </div>
                 ) : null}
               </div>
+
+              {formState.statusMode === "callback" ? (
+                <label className="date-chip">
+                  <span>{formatCallbackDateChip(formState.callbackAt)}</span>
+                  <input
+                    type="date"
+                    value={formState.callbackAt ? formState.callbackAt.slice(0, 10) : ""}
+                    onChange={(event) =>
+                      setFormState((current) => ({
+                        ...current,
+                        callbackAt: event.target.value ? `${event.target.value}T00:00` : "",
+                      }))
+                    }
+                  />
+                </label>
+              ) : null}
             </div>
 
-            {formState.statusMode === "callback" ? (
-              <label className="field field--full">
-                <span className="field__label">Дата перезвона</span>
-                <input
-                  type="date"
-                  value={formState.callbackAt ? formState.callbackAt.slice(0, 10) : ""}
-                  onChange={(event) =>
-                    setFormState((current) => ({
-                      ...current,
-                      callbackAt: event.target.value ? `${event.target.value}T00:00` : "",
-                    }))
-                  }
-                />
-              </label>
-            ) : null}
-
             <div className="accordion-stack">
-              <section className={`accordion-card ${openCreatePanel === "preferences" ? "is-open" : ""}`}>
-                <button
-                  type="button"
-                  className="accordion-card__button"
-                  onClick={() =>
-                    setOpenCreatePanel((current) =>
-                      current === "preferences" ? null : "preferences",
-                    )
-                  }
-                >
-                  <span>Предпочтения</span>
-                </button>
-                {openCreatePanel === "preferences" ? (
-                  <div className="accordion-card__panel">
-                    <label className="field field--full">
-                      <span className="field__label">Предпочтения</span>
-                      <textarea
-                        value={formState.preferences}
-                        onChange={(event) =>
-                          setFormState((current) => ({
-                            ...current,
-                            preferences: event.target.value,
-                          }))
-                        }
-                        placeholder="Что важно по клиенту, пожелания, формат работы"
-                      />
-                    </label>
-                  </div>
-                ) : null}
-              </section>
-
               <section className={`accordion-card ${openCreatePanel === "objects" ? "is-open" : ""}`}>
                 <button
                   type="button"
@@ -1682,36 +1691,14 @@ export default function App() {
                 {openCreatePanel === "objects" ? (
                   <div className="accordion-card__panel">
                     <div className="subform-section__header">
-                      <div className="hint-card hint-card--compact">
-                        На `+` можно выбрать, что добавлять: объект или машиноместо.
-                      </div>
-                      <div className="object-add-menu">
-                        <button
-                          type="button"
-                          className="secondary-button secondary-button--compact"
-                          onClick={() => setIsObjectMenuOpen((current) => !current)}
-                        >
-                          +
-                        </button>
-                        {isObjectMenuOpen ? (
-                          <div className="object-add-menu__panel">
-                            <button
-                              type="button"
-                              className="client-row__menu-item"
-                              onClick={() => addPropertyObject("object")}
-                            >
-                              Добавить объект
-                            </button>
-                            <button
-                              type="button"
-                              className="client-row__menu-item"
-                              onClick={() => addPropertyObject("parking")}
-                            >
-                              Добавить машиноместо
-                            </button>
-                          </div>
-                        ) : null}
-                      </div>
+                      <div />
+                      <button
+                        type="button"
+                        className="secondary-button secondary-button--compact"
+                        onClick={() => addPropertyObject("object")}
+                      >
+                        +
+                      </button>
                     </div>
 
                     <div className="subform-list">
@@ -1774,19 +1761,9 @@ export default function App() {
                 </button>
                 {openCreatePanel === "passport" ? (
                   <div className="accordion-card__panel">
-                    <label className="field field--full">
-                      <span className="field__label">Паспортные данные</span>
-                      <textarea
-                        value={formState.passportData}
-                        onChange={(event) =>
-                          setFormState((current) => ({
-                            ...current,
-                            passportData: event.target.value,
-                          }))
-                        }
-                        placeholder="Серия, номер, кем и когда выдан, дата рождения"
-                      />
-                    </label>
+                    <div className="hint-card hint-card--compact">
+                      Паспортные данные подключу следующим шагом.
+                    </div>
                   </div>
                 ) : null}
               </section>
@@ -1880,7 +1857,13 @@ export default function App() {
               <article
                 className={`client-row client-row--${clientTone}`}
                 key={client.id}
-                onClick={() => openView(client)}
+                onClick={(event) => {
+                  const target = event.target as HTMLElement | null;
+                  if (target?.closest(".client-row__menu, .client-row__menu-trigger")) {
+                    return;
+                  }
+                  openView(client);
+                }}
               >
                 <button
                   type="button"
@@ -1980,14 +1963,16 @@ export default function App() {
                     </div>
                   ) : null}
 
-                  <div className="client-row__footer">
-                    <div className="client-row__flags">
-                      {client.is_proxy_phone ? <span className="badge">Подменный</span> : null}
-                      {client.objects?.length ? (
-                        <span className="badge">Объекты: {client.objects.length}</span>
-                      ) : null}
+                  {client.is_proxy_phone || client.objects?.length ? (
+                    <div className="client-row__footer">
+                      <div className="client-row__flags">
+                        {client.is_proxy_phone ? <span className="badge">Подменный</span> : null}
+                        {client.objects?.length ? (
+                          <span className="badge">Объекты: {client.objects.length}</span>
+                        ) : null}
+                      </div>
                     </div>
-                  </div>
+                  ) : null}
                 </div>
               </article>
             );
