@@ -635,6 +635,19 @@ function getObjectKindLabel(kind: "object" | "parking") {
   return kind === "parking" ? "Машиноместо" : "Объект";
 }
 
+function normalizeExternalLink(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return "";
+  }
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+
+  return `https://${trimmed}`;
+}
+
 export default function App() {
   const [screen, setScreen] = useState<Screen>("list");
   const isTelegram = isTelegramMiniApp();
@@ -1238,7 +1251,7 @@ export default function App() {
 
   function renderContent() {
     if (screen === "view" && selectedClient) {
-      const selectedClientStatus = getClientStatusLabel(selectedClient);
+      const clientLink = normalizeExternalLink(selectedClient.link);
 
       return (
         <section className="sheet sheet--view">
@@ -1260,9 +1273,6 @@ export default function App() {
                 </div>
                 <div className="detail-card__info detail-card__info--location">
                   <div className="detail-card__address">{selectedClient.address || "Без адреса"}</div>
-                  {selectedClientStatus ? (
-                    <div className="detail-card__status">{selectedClientStatus}</div>
-                  ) : null}
                   {selectedClient.complex_name ? (
                     <div className="detail-card__complex">ЖК: {selectedClient.complex_name}</div>
                   ) : null}
@@ -1274,13 +1284,14 @@ export default function App() {
                   <span>Комиссия</span>
                   <strong>{selectedClient.commission ?? 0}%</strong>
                 </div>
-                {selectedClient.preferences ? (
-                  <div className="detail-item detail-item--wide">
-                    <span>Предпочтения</span>
-                    <strong>{selectedClient.preferences}</strong>
-                  </div>
-                ) : null}
               </div>
+
+              {selectedClient.preferences ? (
+                <div className="detail-card__notes">
+                  <span>Предпочтения</span>
+                  <strong>{selectedClient.preferences}</strong>
+                </div>
+              ) : null}
 
               {selectedClient.notes ? (
                 <div className="detail-card__notes">
@@ -1289,8 +1300,47 @@ export default function App() {
                 </div>
               ) : null}
 
+              <details className="detail-disclosure">
+                <summary>
+                  <span>Контактная информация</span>
+                </summary>
+                <div className="detail-related__list">
+                  <div className="detail-related__card">
+                    <strong>Телефон</strong>
+                    <span>{selectedClient.phone || "Не указан"}</span>
+                  </div>
+                  <div className="detail-related__card">
+                    <strong>Адрес</strong>
+                    <span>{selectedClient.address || "Без адреса"}</span>
+                  </div>
+                  {selectedClient.complex_name ? (
+                    <div className="detail-related__card">
+                      <strong>ЖК</strong>
+                      <span>{selectedClient.complex_name}</span>
+                    </div>
+                  ) : null}
+                  {selectedClient.is_proxy_phone ? (
+                    <div className="detail-related__card">
+                      <strong>Телефон</strong>
+                      <span>Подменный</span>
+                    </div>
+                  ) : null}
+                </div>
+              </details>
+
+              {selectedClient.passport_data ? (
+                <details className="detail-disclosure">
+                  <summary>
+                    <span>Паспортные данные</span>
+                  </summary>
+                  <div className="detail-card__notes detail-card__notes--nested">
+                    <strong>{selectedClient.passport_data}</strong>
+                  </div>
+                </details>
+              ) : null}
+
               {selectedClient.objects?.length ? (
-                <details className="detail-disclosure" open>
+                <details className="detail-disclosure">
                   <summary>
                     <span>Объекты</span>
                     <strong>{selectedClient.objects.length}</strong>
@@ -1308,20 +1358,9 @@ export default function App() {
                   </div>
                 </details>
               ) : null}
-
-              {selectedClient.passport_data ? (
-                <details className="detail-disclosure">
-                  <summary>
-                    <span>Паспортные данные</span>
-                  </summary>
-                  <div className="detail-card__notes detail-card__notes--nested">
-                    <strong>{selectedClient.passport_data}</strong>
-                  </div>
-                </details>
-              ) : null}
             </div>
 
-            <div className="detail-action-bar">
+            <div className={`detail-action-bar ${clientLink ? "detail-action-bar--double" : ""}`}>
               <button
                 type="button"
                 className="detail-action detail-action--wide"
@@ -1333,6 +1372,19 @@ export default function App() {
                 <PhoneIcon />
                 <span>Позвонить</span>
               </button>
+              {clientLink ? (
+                <button
+                  type="button"
+                  className="detail-action detail-action--wide"
+                  onClick={() => {
+                    window.open(clientLink, "_blank", "noopener,noreferrer");
+                  }}
+                  aria-label="Открыть ссылку клиента"
+                >
+                  <ExternalLinkIcon />
+                  <span>Ссылка</span>
+                </button>
+              ) : null}
             </div>
           </div>
         </section>
