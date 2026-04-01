@@ -1,6 +1,6 @@
 # LiteLux CRM
 
-Мобильный фронтенд CRM на `React + Vite + Tailwind`.
+Мобильный CRM-интерфейс на `React + Vite + Tailwind` с локальным API-слоем для сохранения в Supabase.
 
 ## Запуск
 
@@ -9,15 +9,10 @@ npm install
 npm run dev
 ```
 
-## Сборка
+## Что есть
 
-```bash
-npm run build
-```
-
-## Что внутри
-
-- мобильный CRM-интерфейс;
-- экран задач;
-- добавление объекта для жилой аренды;
-- SQL-схема в [`residential_rent_object.sql`](./residential_rent_object.sql).
+- CRM с воронками и этапами;
+- задачи;
+- формы создания клиента, собственника и объекта;
+- SQL-схема в `residential_rent_object.sql`;
+- локальный API в `server/index.mjs`.

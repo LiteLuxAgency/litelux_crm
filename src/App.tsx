@@ -23,6 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { postJson } from "@/lib/api";
 
 const funnelCatalog = [
   {
@@ -371,6 +372,17 @@ const utilitiesPayerOptions = ["Собственник", "Арендатор"] a
 const prepaymentOptions = ["За 1 месяц", "2", "3", "4+"] as const;
 const rentTermOptions = ["От года", "Несколько месяцев"] as const;
 const livingConditionsOptions = ["Можно с детьми", "Можно с животными"] as const;
+const ownerRoleOptions = ["Собственник", "Представитель", "Доверенное лицо"] as const;
+const ownerSourceOptions = ["Входящий", "Рекомендация", "Повторный", "Холодный контакт"] as const;
+const ownerChannelOptions = ["Telegram", "WhatsApp", "Email"] as const;
+const ownerWorkModeOptions = ["Эксклюзив", "Неэксклюзив", "Тестовый запуск"] as const;
+const ownerAccessOptions = ["Ключи на руках", "Показы через собственника", "Консьерж / охрана"] as const;
+const ownerDocumentOptions = ["Паспорт", "Право собственности", "Доверенность", "План БТИ"] as const;
+const clientSourceOptions = ["Входящий", "Рекомендация", "Повторный", "Реклама"] as const;
+const clientChannelOptions = ["Telegram", "WhatsApp", "Email"] as const;
+const clientMoveInOptions = ["Сразу", "До 2 недель", "До месяца", "Гибко"] as const;
+const clientPreferenceOptions = ["Можно с детьми", "Можно с животными", "Нужна мебель", "Нужна парковка"] as const;
+const clientPropertyTypeOptions = ["Квартира", "Апартаменты", "Дом, дача", "Пентхаус"] as const;
 
 type PropertyFormState = {
   objectType: string;
@@ -431,6 +443,54 @@ type PropertyCounterField =
   | "bathroomCombined"
   | "elevatorPassenger"
   | "elevatorCargo";
+
+type OwnerFormState = {
+  fullName: string;
+  telegram: string;
+  email: string;
+  role: string;
+  source: string;
+  preferredChannel: string;
+  objectType: string;
+  rooms: string;
+  address: string;
+  priceExpectation: string;
+  workMode: string;
+  accessMode: string[];
+  documents: string[];
+  notes: string;
+};
+
+type OwnerArrayField = "accessMode" | "documents";
+
+type ClientFormState = {
+  fullName: string;
+  telegram: string;
+  email: string;
+  source: string;
+  preferredChannel: string;
+  requestType: string;
+  propertyType: string;
+  rooms: string;
+  budgetFrom: string;
+  budgetTo: string;
+  preferredAreas: string;
+  preferredMetro: string;
+  moveIn: string;
+  rentTerm: string;
+  preferences: string[];
+  notes: string;
+};
+
+type ClientArrayField = "preferences";
+type CreateEntityType = "property" | "owner" | "client";
+type CrmCard = {
+  title: string;
+  price: string;
+  status: string;
+  person: string;
+  tag: string;
+};
 
 function AmbientGlow({ className = "" }: { className?: string }) {
   return <div className={`pointer-events-none absolute rounded-full blur-3xl ${className}`} aria-hidden="true" />;
@@ -521,7 +581,7 @@ function ModeChip({
   );
 }
 
-function StageCard({ card }: { card: (typeof funnelCatalog)[number]["stages"][number]["cards"][number] }) {
+function StageCard({ card }: { card: CrmCard }) {
   return (
     <motion.div whileTap={{ scale: 0.985 }} transition={{ duration: 0.14 }} className="h-full w-full">
       <Surface className="h-full w-full rounded-[20px] border-white/7 bg-[#15191F]/88 shadow-[0_8px_24px_rgba(0,0,0,0.16)]">
@@ -684,6 +744,34 @@ function FormSection({
   );
 }
 
+function FormScreenShell({
+  title,
+  onClose,
+  children,
+  footer,
+}: React.PropsWithChildren<{ title: string; onClose: () => void; footer: React.ReactNode }>) {
+  return (
+    <Screen>
+      <div className="relative min-h-[calc(100dvh-140px)] px-4 pb-32 pt-4">
+        <div className="mb-4 grid grid-cols-[44px_1fr_44px] items-center gap-2">
+          <HeaderAction onClick={onClose}>
+            <ArrowLeft className="h-5 w-5" />
+          </HeaderAction>
+          <div className="text-center text-[24px] font-semibold tracking-tight text-white">{title}</div>
+          <div className="h-11 w-11" />
+        </div>
+
+        <div className="mx-auto mb-4 h-px w-full max-w-[300px] bg-gradient-to-r from-transparent via-white/6 to-transparent" />
+
+        <div className="space-y-3">
+          {children}
+          {footer}
+        </div>
+      </div>
+    </Screen>
+  );
+}
+
 function BottomBar({ active, onChange, searchOpen }: { active: string; onChange: (id: string) => void; searchOpen: boolean }) {
   return (
     <div className="fixed bottom-8 left-1/2 z-30 w-[calc(100%-24px)] max-w-[396px] -translate-x-1/2">
@@ -781,7 +869,7 @@ function DashboardScreen() {
   );
 }
 
-function TasksScreen() {
+function TasksScreen({ onOpenCreate }: { onOpenCreate: () => void }) {
   const [selectedTaskGroup, setSelectedTaskGroup] = useState("overdue");
   const taskTouchStartX = useRef<number | null>(null);
   const taskTabsRef = useRef<HTMLDivElement | null>(null);
@@ -977,6 +1065,7 @@ function TasksScreen() {
         <motion.button
           type="button"
           whileTap={{ scale: 0.96 }}
+          onClick={onOpenCreate}
           className="absolute bottom-3 right-2 z-20 flex h-12 w-12 items-center justify-center text-[#E8C67B]"
           aria-label="Добавить задачу"
         >
@@ -987,7 +1076,7 @@ function TasksScreen() {
   );
 }
 
-function PropertyCreateScreen({ onClose }: { onClose: () => void }) {
+function PropertyCreateScreen({ onClose, onCreated }: { onClose: () => void; onCreated: (card: CrmCard) => void }) {
   const [form, setForm] = useState<PropertyFormState>({
     objectType: "Квартира",
     rooms: "2",
@@ -1039,6 +1128,8 @@ function PropertyCreateScreen({ onClose }: { onClose: () => void }) {
     description: false,
     price: false,
   });
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   const setField = <K extends keyof PropertyFormState>(field: K, value: PropertyFormState[K]) => {
     setForm((previous) => ({ ...previous, [field]: value }));
@@ -1065,20 +1156,45 @@ function PropertyCreateScreen({ onClose }: { onClose: () => void }) {
     }));
   };
 
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
+      setSaveError("");
+
+      await postJson("/api/properties", form);
+      onCreated({
+        title: form.title.trim() || `${form.objectType} · ${form.totalArea || "0"} м²`,
+        price: form.pricePerMonth ? `${form.pricePerMonth} ₽/мес` : "Цена не указана",
+        status: "Новый объект",
+        person: form.address.trim() || "Адрес не заполнен",
+        tag: "Объект",
+      });
+      onClose();
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "Не удалось сохранить объект");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
-    <Screen>
-      <div className="relative min-h-[calc(100dvh-140px)] px-4 pb-32 pt-4">
-        <div className="mb-4 grid grid-cols-[44px_1fr_44px] items-center gap-2">
-          <HeaderAction onClick={onClose}>
-            <ArrowLeft className="h-5 w-5" />
-          </HeaderAction>
-          <div className="text-center text-[24px] font-semibold tracking-tight text-white">Новый объект</div>
-          <div className="h-11 w-11" />
-        </div>
-
-        <div className="mx-auto mb-4 h-px w-full max-w-[300px] bg-gradient-to-r from-transparent via-white/6 to-transparent" />
-
+    <FormScreenShell
+      title="Новый объект"
+      onClose={onClose}
+      footer={
         <div className="space-y-3">
+          {saveError ? <div className="text-sm text-[#F2A27A]">{saveError}</div> : null}
+          <Button
+            type="button"
+            onClick={handleSave}
+            disabled={isSaving}
+            className="h-12 w-full rounded-[20px] bg-[linear-gradient(180deg,#0E6CFF,#005CDB)] text-white hover:bg-[linear-gradient(180deg,#1874FF,#0563E8)] disabled:opacity-60"
+          >
+            {isSaving ? "Сохраняем объект..." : "Сохранить объект"}
+          </Button>
+        </div>
+      }
+    >
           <FormSection title="Формат объекта" open={openSections.format} onToggle={() => toggleSection("format")}>
             <div className="mb-4 flex flex-wrap gap-2">
               <div className="rounded-[16px] border border-[#E8C67B]/55 bg-[linear-gradient(180deg,rgba(232,198,123,0.18),rgba(18,20,24,0.96))] px-3 py-2 text-[13px] font-medium text-[#F7D992]">
@@ -1343,21 +1459,456 @@ function PropertyCreateScreen({ onClose }: { onClose: () => void }) {
             </div>
           </FormSection>
 
-          <Button className="h-12 w-full rounded-[20px] bg-[linear-gradient(180deg,#0E6CFF,#005CDB)] text-white hover:bg-[linear-gradient(180deg,#1874FF,#0563E8)]">
-            Сохранить объект
-          </Button>
-        </div>
-      </div>
-    </Screen>
+    </FormScreenShell>
   );
 }
 
-function FunnelScreen({ onOpenSearch }: { onOpenSearch: () => void }) {
+function OwnerCreateScreen({ onClose, onCreated }: { onClose: () => void; onCreated: (card: CrmCard) => void }) {
+  const [form, setForm] = useState<OwnerFormState>({
+    fullName: "",
+    telegram: "",
+    email: "",
+    role: "Собственник",
+    source: "Входящий",
+    preferredChannel: "Telegram",
+    objectType: "Квартира",
+    rooms: "2",
+    address: "",
+    priceExpectation: "",
+    workMode: "Эксклюзив",
+    accessMode: [],
+    documents: [],
+    notes: "",
+  });
+
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    contact: true,
+    object: true,
+    process: false,
+    notes: false,
+  });
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
+
+  const setField = <K extends keyof OwnerFormState>(field: K, value: OwnerFormState[K]) => {
+    setForm((previous) => ({ ...previous, [field]: value }));
+  };
+
+  const toggleArrayValue = (field: OwnerArrayField, value: string) => {
+    setForm((previous) => ({
+      ...previous,
+      [field]: previous[field].includes(value)
+        ? previous[field].filter((item) => item !== value)
+        : [...previous[field], value],
+    }));
+  };
+
+  const toggleSection = (sectionId: string) => {
+    setOpenSections((previous) => ({ ...previous, [sectionId]: !previous[sectionId] }));
+  };
+
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
+      setSaveError("");
+
+      await postJson("/api/owners", form);
+      onCreated({
+        title: form.address.trim() || `${form.objectType} собственника`,
+        price: form.priceExpectation ? `${form.priceExpectation} ₽` : "Цена не указана",
+        status: "Новый собственник",
+        person: form.fullName.trim() || "Без имени",
+        tag: "Собственник",
+      });
+      onClose();
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "Не удалось сохранить собственника");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <FormScreenShell
+      title="Новый собственник"
+      onClose={onClose}
+      footer={
+        <div className="space-y-3">
+          {saveError ? <div className="text-sm text-[#F2A27A]">{saveError}</div> : null}
+          <Button
+            type="button"
+            onClick={handleSave}
+            disabled={isSaving}
+            className="h-12 w-full rounded-[20px] bg-[linear-gradient(180deg,#0E6CFF,#005CDB)] text-white hover:bg-[linear-gradient(180deg,#1874FF,#0563E8)] disabled:opacity-60"
+          >
+            {isSaving ? "Сохраняем собственника..." : "Сохранить собственника"}
+          </Button>
+        </div>
+      }
+    >
+      <FormSection title="Контакт собственника" open={openSections.contact} onToggle={() => toggleSection("contact")}>
+        <div className="space-y-4">
+          <FormField label="ФИО" value={form.fullName} onChange={(value) => setField("fullName", value)} placeholder="Имя и фамилия" />
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <FormField label="Telegram" value={form.telegram} onChange={(value) => setField("telegram", value)} placeholder="@username" />
+            <FormField label="Email" value={form.email} onChange={(value) => setField("email", value)} placeholder="name@mail.ru" />
+          </div>
+
+          <div className="space-y-2">
+            <div className="text-[12px] font-medium text-white/62">Роль</div>
+            <div className="flex flex-wrap gap-2">
+              {ownerRoleOptions.map((option) => (
+                <FormChip key={option} active={form.role === option} onClick={() => setField("role", option)}>
+                  {option}
+                </FormChip>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="text-[12px] font-medium text-white/62">Источник</div>
+            <div className="flex flex-wrap gap-2">
+              {ownerSourceOptions.map((option) => (
+                <FormChip key={option} active={form.source === option} onClick={() => setField("source", option)}>
+                  {option}
+                </FormChip>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="text-[12px] font-medium text-white/62">Предпочтительный канал</div>
+            <div className="flex flex-wrap gap-2">
+              {ownerChannelOptions.map((option) => (
+                <FormChip key={option} active={form.preferredChannel === option} onClick={() => setField("preferredChannel", option)}>
+                  {option}
+                </FormChip>
+              ))}
+            </div>
+          </div>
+        </div>
+      </FormSection>
+
+      <FormSection title="Объект и ожидания" open={openSections.object} onToggle={() => toggleSection("object")}>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <div className="text-[12px] font-medium text-white/62">Тип объекта</div>
+            <div className="flex flex-wrap gap-2">
+              {clientPropertyTypeOptions.map((option) => (
+                <FormChip key={option} active={form.objectType === option} onClick={() => setField("objectType", option)}>
+                  {option}
+                </FormChip>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="text-[12px] font-medium text-white/62">Комнатность</div>
+            <div className="flex flex-wrap gap-2">
+              {roomOptions.map((option) => (
+                <FormChip key={option} active={form.rooms === option} onClick={() => setField("rooms", option)}>
+                  {option}
+                </FormChip>
+              ))}
+            </div>
+          </div>
+
+          <FormField label="Адрес объекта" value={form.address} onChange={(value) => setField("address", value)} placeholder="Город, улица, дом" />
+          <FormField
+            label="Ожидание по цене"
+            value={form.priceExpectation}
+            onChange={(value) => setField("priceExpectation", value)}
+            suffix="₽"
+            placeholder="Например 250000"
+          />
+        </div>
+      </FormSection>
+
+      <FormSection title="Формат работы" open={openSections.process} onToggle={() => toggleSection("process")}>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <div className="text-[12px] font-medium text-white/62">Режим работы</div>
+            <div className="flex flex-wrap gap-2">
+              {ownerWorkModeOptions.map((option) => (
+                <FormChip key={option} active={form.workMode === option} onClick={() => setField("workMode", option)}>
+                  {option}
+                </FormChip>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="text-[12px] font-medium text-white/62">Доступ к объекту</div>
+            <div className="flex flex-wrap gap-2">
+              {ownerAccessOptions.map((option) => (
+                <FormChip key={option} active={form.accessMode.includes(option)} onClick={() => toggleArrayValue("accessMode", option)}>
+                  {option}
+                </FormChip>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="text-[12px] font-medium text-white/62">Документы</div>
+            <div className="flex flex-wrap gap-2">
+              {ownerDocumentOptions.map((option) => (
+                <FormChip key={option} active={form.documents.includes(option)} onClick={() => toggleArrayValue("documents", option)}>
+                  {option}
+                </FormChip>
+              ))}
+            </div>
+          </div>
+        </div>
+      </FormSection>
+
+      <FormSection title="Заметки" open={openSections.notes} onToggle={() => toggleSection("notes")}>
+        <FormField
+          label="Комментарий"
+          value={form.notes}
+          onChange={(value) => setField("notes", value)}
+          placeholder="Что важно знать по собственнику и условиям"
+          multiline
+        />
+      </FormSection>
+    </FormScreenShell>
+  );
+}
+
+function ClientCreateScreen({ onClose, onCreated }: { onClose: () => void; onCreated: (card: CrmCard) => void }) {
+  const [form, setForm] = useState<ClientFormState>({
+    fullName: "",
+    telegram: "",
+    email: "",
+    source: "Входящий",
+    preferredChannel: "Telegram",
+    requestType: "Долгосрочная аренда",
+    propertyType: "Квартира",
+    rooms: "2",
+    budgetFrom: "",
+    budgetTo: "",
+    preferredAreas: "",
+    preferredMetro: "",
+    moveIn: "До 2 недель",
+    rentTerm: "От года",
+    preferences: [],
+    notes: "",
+  });
+
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    client: true,
+    request: true,
+    location: false,
+    conditions: false,
+    notes: false,
+  });
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
+
+  const setField = <K extends keyof ClientFormState>(field: K, value: ClientFormState[K]) => {
+    setForm((previous) => ({ ...previous, [field]: value }));
+  };
+
+  const toggleArrayValue = (field: ClientArrayField, value: string) => {
+    setForm((previous) => ({
+      ...previous,
+      [field]: previous[field].includes(value)
+        ? previous[field].filter((item) => item !== value)
+        : [...previous[field], value],
+    }));
+  };
+
+  const toggleSection = (sectionId: string) => {
+    setOpenSections((previous) => ({ ...previous, [sectionId]: !previous[sectionId] }));
+  };
+
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
+      setSaveError("");
+
+      await postJson("/api/clients", form);
+      onCreated({
+        title: form.fullName.trim() ? `Запрос клиента: ${form.fullName}` : "Новый клиентский запрос",
+        price: form.budgetTo ? `Бюджет до ${form.budgetTo} ₽` : "Бюджет не указан",
+        status: "Новый запрос",
+        person: form.preferredAreas.trim() || "Локация не указана",
+        tag: "Клиент",
+      });
+      onClose();
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "Не удалось сохранить клиента");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <FormScreenShell
+      title="Новый клиент"
+      onClose={onClose}
+      footer={
+        <div className="space-y-3">
+          {saveError ? <div className="text-sm text-[#F2A27A]">{saveError}</div> : null}
+          <Button
+            type="button"
+            onClick={handleSave}
+            disabled={isSaving}
+            className="h-12 w-full rounded-[20px] bg-[linear-gradient(180deg,#0E6CFF,#005CDB)] text-white hover:bg-[linear-gradient(180deg,#1874FF,#0563E8)] disabled:opacity-60"
+          >
+            {isSaving ? "Сохраняем клиента..." : "Сохранить клиента"}
+          </Button>
+        </div>
+      }
+    >
+      <FormSection title="Карточка клиента" open={openSections.client} onToggle={() => toggleSection("client")}>
+        <div className="space-y-4">
+          <FormField label="ФИО" value={form.fullName} onChange={(value) => setField("fullName", value)} placeholder="Имя и фамилия" />
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <FormField label="Telegram" value={form.telegram} onChange={(value) => setField("telegram", value)} placeholder="@username" />
+            <FormField label="Email" value={form.email} onChange={(value) => setField("email", value)} placeholder="name@mail.ru" />
+          </div>
+
+          <div className="space-y-2">
+            <div className="text-[12px] font-medium text-white/62">Источник</div>
+            <div className="flex flex-wrap gap-2">
+              {clientSourceOptions.map((option) => (
+                <FormChip key={option} active={form.source === option} onClick={() => setField("source", option)}>
+                  {option}
+                </FormChip>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="text-[12px] font-medium text-white/62">Канал связи</div>
+            <div className="flex flex-wrap gap-2">
+              {clientChannelOptions.map((option) => (
+                <FormChip key={option} active={form.preferredChannel === option} onClick={() => setField("preferredChannel", option)}>
+                  {option}
+                </FormChip>
+              ))}
+            </div>
+          </div>
+        </div>
+      </FormSection>
+
+      <FormSection title="Запрос" open={openSections.request} onToggle={() => toggleSection("request")}>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <div className="text-[12px] font-medium text-white/62">Тип запроса</div>
+            <div className="flex flex-wrap gap-2">
+              <FormChip active={form.requestType === "Долгосрочная аренда"} onClick={() => setField("requestType", "Долгосрочная аренда")}>
+                Долгосрочная аренда
+              </FormChip>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="text-[12px] font-medium text-white/62">Тип объекта</div>
+            <div className="flex flex-wrap gap-2">
+              {clientPropertyTypeOptions.map((option) => (
+                <FormChip key={option} active={form.propertyType === option} onClick={() => setField("propertyType", option)}>
+                  {option}
+                </FormChip>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="text-[12px] font-medium text-white/62">Комнатность</div>
+            <div className="flex flex-wrap gap-2">
+              {roomOptions.map((option) => (
+                <FormChip key={option} active={form.rooms === option} onClick={() => setField("rooms", option)}>
+                  {option}
+                </FormChip>
+              ))}
+            </div>
+          </div>
+        </div>
+      </FormSection>
+
+      <FormSection title="Бюджет и локация" open={openSections.location} onToggle={() => toggleSection("location")}>
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <FormField label="Бюджет от" value={form.budgetFrom} onChange={(value) => setField("budgetFrom", value)} suffix="₽" />
+            <FormField label="Бюджет до" value={form.budgetTo} onChange={(value) => setField("budgetTo", value)} suffix="₽" />
+          </div>
+          <FormField
+            label="Районы"
+            value={form.preferredAreas}
+            onChange={(value) => setField("preferredAreas", value)}
+            placeholder="Например Патрики, Хамовники, Сити"
+          />
+          <FormField
+            label="Метро"
+            value={form.preferredMetro}
+            onChange={(value) => setField("preferredMetro", value)}
+            placeholder="Например Кропоткинская, Смоленская"
+          />
+        </div>
+      </FormSection>
+
+      <FormSection title="Срок и условия" open={openSections.conditions} onToggle={() => toggleSection("conditions")}>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <div className="text-[12px] font-medium text-white/62">Когда нужен въезд</div>
+            <div className="flex flex-wrap gap-2">
+              {clientMoveInOptions.map((option) => (
+                <FormChip key={option} active={form.moveIn === option} onClick={() => setField("moveIn", option)}>
+                  {option}
+                </FormChip>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="text-[12px] font-medium text-white/62">Срок аренды</div>
+            <div className="flex flex-wrap gap-2">
+              {rentTermOptions.map((option) => (
+                <FormChip key={option} active={form.rentTerm === option} onClick={() => setField("rentTerm", option)}>
+                  {option}
+                </FormChip>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="text-[12px] font-medium text-white/62">Предпочтения</div>
+            <div className="flex flex-wrap gap-2">
+              {clientPreferenceOptions.map((option) => (
+                <FormChip key={option} active={form.preferences.includes(option)} onClick={() => toggleArrayValue("preferences", option)}>
+                  {option}
+                </FormChip>
+              ))}
+            </div>
+          </div>
+        </div>
+      </FormSection>
+
+      <FormSection title="Заметки" open={openSections.notes} onToggle={() => toggleSection("notes")}>
+        <FormField
+          label="Комментарий"
+          value={form.notes}
+          onChange={(value) => setField("notes", value)}
+          placeholder="Пожелания клиента, ограничения, детали коммуникации"
+          multiline
+        />
+      </FormSection>
+    </FormScreenShell>
+  );
+}
+
+function FunnelScreen({
+  createRequest,
+}: {
+  createRequest: number;
+}) {
   const [selectedFunnel, setSelectedFunnel] = useState("selection");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedStage, setSelectedStage] = useState("clarify");
   const [createSheetOpen, setCreateSheetOpen] = useState(false);
-  const [propertyFormOpen, setPropertyFormOpen] = useState(false);
+  const [activeCreateScreen, setActiveCreateScreen] = useState<CreateEntityType | null>(null);
+  const [extraCards, setExtraCards] = useState<Record<string, CrmCard[]>>({});
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const touchStartX = useRef<number | null>(null);
 
@@ -1371,9 +1922,22 @@ function FunnelScreen({ onOpenSearch }: { onOpenSearch: () => void }) {
     [activeFunnel, selectedStage],
   );
 
+  const stageStorageKey = (funnelId: string, stageId: string) => `${funnelId}:${stageId}`;
+  const activeStageCards = [
+    ...(extraCards[stageStorageKey(activeFunnel.id, activeStage.id)] ?? []),
+    ...activeStage.cards,
+  ];
+
   useEffect(() => {
     setSelectedStage(activeFunnel.stages[0]?.id ?? "");
   }, [activeFunnel]);
+
+  useEffect(() => {
+    if (createRequest > 0) {
+      setCreateSheetOpen(true);
+      setDrawerOpen(false);
+    }
+  }, [createRequest]);
 
   const handleStageSelect = (stageId: string) => {
     setSelectedStage(stageId);
@@ -1417,10 +1981,43 @@ function FunnelScreen({ onOpenSearch }: { onOpenSearch: () => void }) {
     { id: "client", label: "Клиент", icon: User },
     { id: "owner", label: "Собственник", icon: Crown },
     { id: "property", label: "Объект", icon: Building2 },
-  ] as const;
+  ] as const satisfies ReadonlyArray<{ id: CreateEntityType; label: string; icon: typeof User }>;
 
-  if (propertyFormOpen) {
-    return <PropertyCreateScreen onClose={() => setPropertyFormOpen(false)} />;
+  const appendCard = (funnelId: string, stageId: string, card: CrmCard) => {
+    const storageKey = stageStorageKey(funnelId, stageId);
+    setExtraCards((previous) => ({
+      ...previous,
+      [storageKey]: [card, ...(previous[storageKey] ?? [])],
+    }));
+    setSelectedFunnel(funnelId);
+    setSelectedStage(stageId);
+  };
+
+  if (activeCreateScreen === "property") {
+    return (
+      <PropertyCreateScreen
+        onClose={() => setActiveCreateScreen(null)}
+        onCreated={(card) => appendCard("rent", "published", card)}
+      />
+    );
+  }
+
+  if (activeCreateScreen === "owner") {
+    return (
+      <OwnerCreateScreen
+        onClose={() => setActiveCreateScreen(null)}
+        onCreated={(card) => appendCard("collection", "no-answer", card)}
+      />
+    );
+  }
+
+  if (activeCreateScreen === "client") {
+    return (
+      <ClientCreateScreen
+        onClose={() => setActiveCreateScreen(null)}
+        onCreated={(card) => appendCard("selection", "clarify", card)}
+      />
+    );
   }
 
   return (
@@ -1513,6 +2110,7 @@ function FunnelScreen({ onOpenSearch }: { onOpenSearch: () => void }) {
             >
               {activeFunnel.stages.map((stage) => {
                 const active = stage.id === activeStage.id;
+                const stageCardCount = stage.cards.length + (extraCards[stageStorageKey(activeFunnel.id, stage.id)]?.length ?? 0);
 
                 return (
                   <motion.button
@@ -1532,7 +2130,7 @@ function FunnelScreen({ onOpenSearch }: { onOpenSearch: () => void }) {
                         {stage.title}
                       </div>
                       <div className={["ml-0.5 text-[11px] font-medium leading-none", active ? "text-[#F7D992]/80" : "text-white/32"].join(" ")}>
-                        {stage.cards.length}
+                        {stageCardCount}
                       </div>
                     </div>
                   </motion.button>
@@ -1542,7 +2140,7 @@ function FunnelScreen({ onOpenSearch }: { onOpenSearch: () => void }) {
 
             <div className="relative overflow-hidden" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
               <div className="flex h-full w-full flex-col gap-3">
-                {activeStage.cards.map((card) => (
+                {activeStageCards.map((card) => (
                   <div key={`${activeFunnel.id}-${activeStage.id}-${card.title}`} className="w-full">
                     <StageCard card={card} />
                   </div>
@@ -1574,10 +2172,7 @@ function FunnelScreen({ onOpenSearch }: { onOpenSearch: () => void }) {
                       whileTap={{ scale: 0.985, y: 1 }}
                       onClick={() => {
                         setCreateSheetOpen(false);
-
-                        if (option.id === "property") {
-                          setPropertyFormOpen(true);
-                        }
+                        setActiveCreateScreen(option.id);
                       }}
                       className="flex w-[210px] items-center rounded-full border border-white/10 bg-[#141923]/94 px-3 py-2 text-left text-white shadow-[0_14px_30px_rgba(0,0,0,0.26)] backdrop-blur-[18px]"
                     >
@@ -1706,6 +2301,7 @@ function ProfileScreen() {
 export default function PadluxCrmFrontend() {
   const [active, setActive] = useState("crm");
   const [searchOpen, setSearchOpen] = useState(false);
+  const [crmCreateRequest, setCrmCreateRequest] = useState(0);
 
   const handleNavChange = (id: string) => {
     if (id === "crm" && active === "crm") {
@@ -1717,20 +2313,26 @@ export default function PadluxCrmFrontend() {
     setActive(id);
   };
 
+  const handleOpenCreateFlow = () => {
+    setSearchOpen(false);
+    setActive("crm");
+    setCrmCreateRequest((previous) => previous + 1);
+  };
+
   const screen = useMemo(() => {
     switch (active) {
       case "dashboard":
         return <DashboardScreen />;
       case "tasks":
-        return <TasksScreen />;
+        return <TasksScreen onOpenCreate={handleOpenCreateFlow} />;
       case "messages":
         return <MessagesScreen />;
       case "profile":
         return <ProfileScreen />;
       default:
-        return <FunnelScreen onOpenSearch={() => setSearchOpen(true)} />;
+        return <FunnelScreen createRequest={crmCreateRequest} />;
     }
-  }, [active]);
+  }, [active, crmCreateRequest]);
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(242,204,122,0.10),transparent_24%),radial-gradient(circle_at_80%_18%,rgba(255,255,255,0.06),transparent_20%),linear-gradient(180deg,#07080A_0%,#0A0C10_54%,#090A0D_100%)] px-3 py-6">
