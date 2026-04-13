@@ -18,12 +18,23 @@
 }
 
 html {
+  min-height: 100%;
   background: #07080a;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: none;
+  -webkit-text-size-adjust: 100%;
+  -webkit-overflow-scrolling: touch;
 }
 
 body {
   margin: 0;
+  min-height: 100%;
   min-width: 320px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
   background:
     radial-gradient(circle at top, rgba(245, 199, 109, 0.12), transparent 24%),
     radial-gradient(circle at 85% 20%, rgba(255, 255, 255, 0.06), transparent 18%),
@@ -32,6 +43,21 @@ body {
 
 #root {
   min-height: 100vh;
+  overflow-x: hidden;
+  overflow-y: visible;
+  overscroll-behavior: none;
+}
+
+button,
+a,
+[role="button"] {
+  touch-action: manipulation;
+}
+
+input,
+textarea,
+select {
+  font: inherit;
 }
 
 ::selection {

@@ -7,7 +7,7 @@ import express from "express";
 import multer from "multer";
 import { createClient } from "@supabase/supabase-js";
 
-const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, PORT = 4176 } = process.env;
+const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, DADATA_API_KEY, DADATA_SECRET_KEY, PORT = 4176 } = process.env;
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
   throw new Error("Не заполнены SUPABASE_URL и SUPABASE_SERVICE_ROLE_KEY");
@@ -144,6 +144,121 @@ app.get("/", (_req, res) => {
 
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true, schema: "crm" });
+});
+
+app.post("/api/address/suggest", async (req, res) => {
+  const query = String(req.body?.query ?? "").trim();
+
+  if (query.length < 3) {
+    return res.status(200).json({ suggestions: [] });
+  }
+
+  if (!DADATA_API_KEY) {
+    return res.status(503).json({ error: "Не настроен DADATA_API_KEY" });
+  }
+
+  try {
+    const response = await fetch("https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: `Token ${DADATA_API_KEY}`,
+      },
+      body: JSON.stringify({
+        query,
+        count: 7,
+      }),
+    });
+
+    const payload = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      return res.status(400).json({ error: payload?.message ?? payload?.error ?? "Не удалось получить подсказки адреса" });
+    }
+
+    const suggestions = Array.isArray(payload?.suggestions)
+      ? payload.suggestions.map((item) => ({
+          value: item?.value ?? "",
+          unrestrictedValue: item?.unrestricted_value ?? "",
+          data: {
+            region: item?.data?.region ?? "",
+            regionWithType: item?.data?.region_with_type ?? "",
+            city: item?.data?.city ?? "",
+            cityWithType: item?.data?.city_with_type ?? "",
+            settlement: item?.data?.settlement ?? "",
+            settlementWithType: item?.data?.settlement_with_type ?? "",
+            street: item?.data?.street ?? "",
+            streetWithType: item?.data?.street_with_type ?? "",
+            house: item?.data?.house ?? "",
+            block: item?.data?.block ?? "",
+            blockTypeFull: item?.data?.block_type_full ?? "",
+            geoLat: item?.data?.geo_lat ?? "",
+            geoLon: item?.data?.geo_lon ?? "",
+          },
+        }))
+      : [];
+
+    return res.status(200).json({ suggestions });
+  } catch (error) {
+    return res.status(400).json({
+      error: error instanceof Error ? error.message : "Не удалось получить подсказки адреса",
+    });
+  }
+});
+
+app.post("/api/address/clean", async (req, res) => {
+  const query = String(req.body?.query ?? "").trim();
+
+  if (!query) {
+    return res.status(200).json({ address: null });
+  }
+
+  if (!DADATA_API_KEY || !DADATA_SECRET_KEY) {
+    return res.status(503).json({ error: "Не настроены DADATA_API_KEY и DADATA_SECRET_KEY" });
+  }
+
+  try {
+    const response = await fetch("https://cleaner.dadata.ru/api/v1/clean/address", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: `Token ${DADATA_API_KEY}`,
+        "X-Secret": DADATA_SECRET_KEY,
+      },
+      body: JSON.stringify([query]),
+    });
+
+    const payload = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      return res.status(400).json({ error: payload?.message ?? payload?.error ?? "Не удалось очистить адрес" });
+    }
+
+    const item = Array.isArray(payload) ? payload[0] : null;
+    const metro = Array.isArray(item?.metro)
+      ? item.metro.map((station) => ({
+          name: station?.name ?? "",
+          line: station?.line ?? "",
+          distance: station?.distance ?? "",
+        }))
+      : [];
+
+    return res.status(200).json({
+      address: item
+        ? {
+            result: item.result ?? "",
+            entrance: item.entrance ?? "",
+            metro,
+          }
+        : null,
+    });
+  } catch (error) {
+    return res.status(400).json({
+      error: error instanceof Error ? error.message : "Не удалось очистить адрес",
+    });
+  }
 });
 
 const handleListOwners = async (_req, res) => {
@@ -457,9 +572,10 @@ app.post("/api/properties", async (req, res) => {
     deposit_amount: toReal(pricing.depositAmount),
     deposit_rub: toInteger(pricing.depositAmount),
     commission_amount: toReal(pricing.commissionAmount),
-    commission_type: toNullableText(pricing.commissionType),
+    commission_type: "percent",
     utilities_mode: toNullableText(pricing.utilitiesMode),
-    utilities_comment: toNullableText(pricing.utilitiesComment),
+    meter_mode: toNullableText(pricing.meterMode),
+    utilities_comment: null,
     prepayment_months: toInteger(pricing.prepaymentMonths) || null,
     minimum_rent_term_months: toInteger(pricing.minimumRentTermMonths) || null,
     total_area_m2: toReal(layout.totalArea),

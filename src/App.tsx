@@ -9,13 +9,16 @@ import {
   ChevronRight,
   Clock3,
   Crown,
+  Globe,
   LayoutDashboard,
   Layers3,
   Menu,
   MessageSquare,
   Minus,
   MoreHorizontal,
+  Pencil,
   Phone,
+  PhoneOff,
   Plus,
   Search,
   User,
@@ -37,6 +40,8 @@ const createCardId = (prefix: string) => {
   return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
 };
 
+const normalizeCommentText = (value: string) => value.replace(/\s*\n+\s*/g, " ").replace(/\s{2,}/g, " ").trim();
+
 const buildOwnerSeed = ({
   id,
   fullName,
@@ -48,6 +53,7 @@ const buildOwnerSeed = ({
   touchesCount = 0,
   comment = "",
   agentExperience = "",
+  clientOnlyState = "",
   leadsState = "",
   showingsState = "",
   commissionPercent = "",
@@ -71,6 +77,7 @@ const buildOwnerSeed = ({
   touchesCount?: number;
   comment?: string;
   agentExperience?: string;
+  clientOnlyState?: string;
   leadsState?: string;
   showingsState?: string;
   commissionPercent?: string;
@@ -100,6 +107,7 @@ const buildOwnerSeed = ({
   touchesCount,
   comment,
   agentExperience,
+  clientOnlyState,
   leadsState,
   showingsState,
   commissionPercent,
@@ -134,6 +142,7 @@ const funnelCatalog = [
             touchesCount: 3,
             comment: "Были агенты, мало показов",
             agentExperience: "Да",
+            clientOnlyState: "Нет",
             leadsState: "Мало",
             showingsState: "Редко",
             commissionPercent: "50",
@@ -147,37 +156,6 @@ const funnelCatalog = [
             history: [
               { id: "history-oleg-1", title: "Звонок", meta: "Нет ответа", at: "2026-04-03T18:20" },
               { id: "history-oleg-2", title: "Карточка создана", meta: "Новый собственник", at: "2026-04-03T14:10" },
-            ],
-          }),
-        ],
-      },
-      {
-        id: "answered",
-        title: "Ответил",
-        cards: [
-          buildOwnerSeed({
-            id: "owner-natalya-ilina",
-            fullName: "Наталья Ильина",
-            phone: "+7 999 210-45-67",
-            phoneType: "Прямой",
-            stageTitle: "Ответил",
-            nextAction: "Написать",
-            nextActionAt: "2026-04-05T16:30",
-            touchesCount: 1,
-            comment: "Спокойная коммуникация, просила написать условия",
-            agentExperience: "Нет",
-            leadsState: "Нет",
-            showingsState: "Нет",
-            commissionPercent: "50",
-            cooperationType: "Эксклюзив",
-            dealType: "Продажа",
-            objectAddress: "Пресненская наб., 12",
-            objectComplex: "White House",
-            objectPrice: "54 000 000 ₽",
-            objectLink: "https://example.com/white-house",
-            lastContactAt: "2026-04-05T11:10",
-            history: [
-              { id: "history-natalya-1", title: "Сообщение", meta: "Отправлены условия", at: "2026-04-05T11:10" },
             ],
           }),
         ],
@@ -197,6 +175,7 @@ const funnelCatalog = [
             touchesCount: 4,
             comment: "Готов обсуждать старт после встречи",
             agentExperience: "Негатив",
+            clientOnlyState: "Нет",
             leadsState: "Норм",
             showingsState: "Активно",
             commissionPercent: "40",
@@ -229,6 +208,7 @@ const funnelCatalog = [
             touchesCount: 2,
             comment: "Встреча в офисе, ждёт расчёт по цене",
             agentExperience: "Да",
+            clientOnlyState: "Нет",
             leadsState: "Мало",
             showingsState: "Редко",
             commissionPercent: "50",
@@ -259,6 +239,7 @@ const funnelCatalog = [
             touchesCount: 5,
             comment: "Объект уже в работе у команды",
             agentExperience: "Да",
+            clientOnlyState: "Нет",
             leadsState: "Много",
             showingsState: "Активно",
             commissionPercent: "50",
@@ -271,6 +252,38 @@ const funnelCatalog = [
             lastContactAt: "2026-04-04T12:40",
             history: [
               { id: "history-marina-1", title: "Статус обновлён", meta: "Карточка взята в работу", at: "2026-04-04T12:40" },
+            ],
+          }),
+        ],
+      },
+      {
+        id: "clients-only",
+        title: "Только клиенты",
+        cards: [
+          buildOwnerSeed({
+            id: "owner-natalya-ilina",
+            fullName: "Наталья Ильина",
+            phone: "+7 999 210-45-67",
+            phoneType: "Прямой",
+            stageTitle: "Только клиенты",
+            nextAction: "Написать",
+            nextActionAt: "2026-04-05T16:30",
+            touchesCount: 1,
+            comment: "Спокойная коммуникация, просила написать условия",
+            agentExperience: "Нет",
+            clientOnlyState: "Да",
+            leadsState: "Нет",
+            showingsState: "Нет",
+            commissionPercent: "50",
+            cooperationType: "Эксклюзив",
+            dealType: "Продажа",
+            objectAddress: "Пресненская наб., 12",
+            objectComplex: "White House",
+            objectPrice: "54 000 000 ₽",
+            objectLink: "https://example.com/white-house",
+            lastContactAt: "2026-04-05T11:10",
+            history: [
+              { id: "history-natalya-1", title: "Сообщение", meta: "Отправлены условия", at: "2026-04-05T11:10" },
             ],
           }),
         ],
@@ -289,6 +302,7 @@ const funnelCatalog = [
             touchesCount: 1,
             comment: "Уже работает с другим агентом",
             agentExperience: "Да",
+            clientOnlyState: "Нет",
             leadsState: "Нет",
             showingsState: "Нет",
             commissionPercent: "",
@@ -560,7 +574,14 @@ const propertyTypeOptions = [
   { label: "Квартира", value: "flat" },
   { label: "Апартаменты", value: "apartments" },
 ] as const;
-const propertyFlowPills = ["Долгосрочная аренда", "Жилая"] as const;
+const propertyDealOptions = [
+  { label: "Аренда", value: "rent" },
+  { label: "Продажа", value: "sale" },
+] as const;
+const propertySegmentOptions = [
+  { label: "Жилая", value: "residential" },
+  { label: "Коммерческая", value: "commercial" },
+] as const;
 const layoutTypeOptions = [
   { label: "Смежная", value: "open" },
   { label: "Изолированная", value: "isolated" },
@@ -586,7 +607,10 @@ const furnitureModeOptions = [
 const utilitiesModeOptions = [
   { label: "Включены", value: "included" },
   { label: "Не включены", value: "excluded" },
-  { label: "Частично", value: "partial" },
+] as const;
+const meterModeOptions = [
+  { label: "Включены", value: "included" },
+  { label: "Не включены", value: "excluded" },
 ] as const;
 const commissionTypeOptions = [
   { label: "%", value: "percent" },
@@ -619,9 +643,10 @@ const rentTermOptions = ["От года", "Несколько месяцев"] a
 const ownerNextActionOptions = ["Нет действий", "Перезвонить", "Написать", "Встреча"] as const;
 const ownerPhoneTypeOptions = ["Прямой", "Подменный", "Неизвестно"] as const;
 const ownerAgentExperienceOptions = ["Да", "Нет", "Негатив"] as const;
+const ownerClientOnlyOptions = ["Да", "Нет"] as const;
 const ownerLeadsOptions = ["Нет", "Мало", "Норм", "Много"] as const;
 const ownerShowingOptions = ["Нет", "Редко", "Активно"] as const;
-const ownerCooperationOptions = ["Дубль", "Эксклюзив"] as const;
+const ownerCooperationOptions = ["Дубль", "Эксклюзив", "Думает"] as const;
 const ownerDealTypeOptions = ["Аренда", "Продажа"] as const;
 const ownerCallResultOptions = ["Не звонил", "Нет ответа", "Дозвонились", "Занят", "Сбросил"] as const;
 const ownerCallFollowUpOptions = ["Перезвонить", "Встреча", "Написать"] as const;
@@ -679,6 +704,16 @@ const normalizeRussianPhone = (value: string) => {
 };
 
 const hasCompleteRussianPhone = (value: string) => value.replace(/\D/g, "").length === 11;
+
+const normalizeCommissionPercent = (value: string) => {
+  const digits = value.replace(/\D/g, "").slice(0, 3);
+
+  if (!digits) {
+    return "";
+  }
+
+  return String(Math.min(Number(digits), 100));
+};
 
 const normalizeScheduleDate = (value: string) => {
   const digits = value.replace(/\D/g, "").slice(0, 8);
@@ -936,10 +971,47 @@ const propertyTypeLabelMap = {
   apartments: "Апартаменты",
 } as const satisfies Record<PropertyFormState["propertyType"], string>;
 
+const propertyDealLabelMap = {
+  rent: "Аренда",
+  sale: "Продажа",
+} as const satisfies Record<PropertyDealType, string>;
+
+const propertySegmentLabelMap = {
+  residential: "Жилая",
+  commercial: "Коммерческая",
+} as const satisfies Record<PropertySegmentType, string>;
+
+const buildPropertyFlowPills = (scenario?: PropertyCreateScenario | null) => {
+  if (!scenario) {
+    return ["Долгосрочная аренда", "Жилая"];
+  }
+
+  if (scenario.dealType === "rent" && scenario.segment === "residential") {
+    return ["Долгосрочная аренда", "Жилая"];
+  }
+
+  return [propertyDealLabelMap[scenario.dealType], propertySegmentLabelMap[scenario.segment]];
+};
+
+const isSupportedPropertyScenario = (scenario: PropertyCreateScenario) =>
+  scenario.dealType === "rent" && scenario.segment === "residential";
+
 const composePropertyAddress = (location: PropertyFormState["location"]) =>
   [location.city, location.street, location.houseNumber, location.buildingNumber && `к${location.buildingNumber}`, location.blockNumber && `стр${location.blockNumber}`]
     .filter(Boolean)
     .join(", ");
+
+const formatPropertyLocationPreview = (location: PropertyFormState["location"]) => {
+  const address = composePropertyAddress(location);
+  const metro = location.undergroundStation.trim();
+  const metroLabel = metro ? `м. ${metro}` : "";
+
+  if (address && metroLabel) {
+    return `${address} · ${metroLabel}`;
+  }
+
+  return address || metroLabel;
+};
 
 const formatPropertySummary = (form: PropertyFormState) => {
   const parts = [
@@ -1038,7 +1110,8 @@ const initialPropertyForm = (): PropertyFormState => ({
     depositAmount: "",
     commissionAmount: "",
     commissionType: "percent",
-    utilitiesMode: "partial",
+    utilitiesMode: "included",
+    meterMode: "excluded",
     utilitiesComment: "",
     prepaymentMonths: "",
     minimumRentTermMonths: "",
@@ -1102,6 +1175,25 @@ const initialPropertyForm = (): PropertyFormState => ({
     agentComment: "",
     managerId: "",
   },
+});
+
+const clonePropertyForm = (form: PropertyFormState): PropertyFormState => ({
+  ...form,
+  basicInfo: { ...form.basicInfo },
+  location: { ...form.location },
+  pricing: { ...form.pricing },
+  layout: { ...form.layout },
+  interior: { ...form.interior },
+  building: {
+    ...form.building,
+    parkingTypes: [...form.building.parkingTypes],
+  },
+  media: {
+    ...form.media,
+    photos: [...form.media.photos],
+  },
+  publication: { ...form.publication },
+  crmMeta: { ...form.crmMeta },
 });
 
 const initialPropertySections = {
@@ -1178,7 +1270,8 @@ type PropertyFormState = {
     depositAmount: string;
     commissionAmount: string;
     commissionType: "percent" | "fixed";
-    utilitiesMode: "included" | "excluded" | "partial";
+    utilitiesMode: "included" | "excluded";
+    meterMode: "included" | "excluded";
     utilitiesComment: string;
     prepaymentMonths: string;
     minimumRentTermMonths: string;
@@ -1275,6 +1368,7 @@ type OwnerFormState = {
   nextActionDate: string;
   nextActionTime: string;
   agentExperience: string;
+  clientOnlyState: string;
   leadsState: string;
   showingsState: string;
   commissionPercent: string;
@@ -1310,11 +1404,50 @@ type ClientFormState = {
 
 type ClientArrayField = "preferences";
 type CreateEntityType = "property" | "owner" | "client";
+type CreateScreen = CreateEntityType | "property-scenario";
+type PropertyDealType = (typeof propertyDealOptions)[number]["value"];
+type PropertySegmentType = (typeof propertySegmentOptions)[number]["value"];
+type PropertyCreateScenario = {
+  dealType: PropertyDealType;
+  segment: PropertySegmentType;
+};
 type OwnerHistoryEntry = {
   id: string;
   title: string;
   meta?: string;
   at: string;
+};
+
+type AddressSuggestion = {
+  value: string;
+  unrestrictedValue: string;
+  data: {
+    region: string;
+    regionWithType: string;
+    city: string;
+    cityWithType: string;
+    settlement: string;
+    settlementWithType: string;
+    street: string;
+    streetWithType: string;
+    house: string;
+    block: string;
+    blockTypeFull: string;
+    geoLat: string;
+    geoLon: string;
+  };
+};
+
+type CleanAddressResponse = {
+  address: null | {
+    result: string;
+    entrance: string;
+    metro: Array<{
+      name: string;
+      line: string;
+      distance: number | string;
+    }>;
+  };
 };
 
 type OwnerCallResult = (typeof ownerCallResultOptions)[number];
@@ -1341,6 +1474,7 @@ type OwnerCrmCard = CrmCardBase & {
   touchesCount: number;
   comment: string;
   agentExperience: string;
+  clientOnlyState: string;
   leadsState: string;
   showingsState: string;
   commissionPercent: string;
@@ -1448,35 +1582,176 @@ function ModeChip({
   );
 }
 
-function OwnerCardPreview({ card }: { card: OwnerCrmCard }) {
-  const overdue = isOwnerCardOverdue(card);
+function PhoneTypeIndicator({
+  phoneType,
+  compact = false,
+}: {
+  phoneType: string;
+  compact?: boolean;
+}) {
+  const isDirect = phoneType === "Прямой";
+  const isForwarded = phoneType === "Подменный";
+  const Icon = isForwarded ? PhoneOff : Phone;
 
   return (
-    <div className="grid min-h-[88px] grid-rows-[auto_auto_auto] gap-1.5">
-      <div className="space-y-0.5">
-        <div className="flex items-start justify-between gap-2.5">
-          <div className="min-w-0">
-            <div className="truncate text-[15px] font-medium leading-5 text-white">{card.fullName}</div>
-            <div className="truncate text-[12px] text-white/62">{card.phone}</div>
+    <div
+      className={[
+        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium",
+        isDirect
+          ? "border-[#E8C67B]/30 bg-[#E8C67B]/10 text-[#F4D488]"
+          : isForwarded
+            ? "border-white/[0.08] bg-[#151C25] text-white/72"
+            : "border-white/[0.08] bg-[#151C25] text-white/52",
+      ].join(" ")}
+      aria-label={`Тип номера: ${phoneType}`}
+    >
+      <Icon className="h-3.5 w-3.5" />
+      {!compact ? <span>{phoneType}</span> : null}
+    </div>
+  );
+}
+
+function OwnerInfoValue({ value }: { value: string }) {
+  return (
+    <div className="inline-flex min-h-[40px] items-center rounded-[16px] border border-[#E8C67B]/28 bg-[linear-gradient(180deg,rgba(232,198,123,0.12),rgba(255,255,255,0.02)_100%)] px-3 text-[13px] font-medium text-[#F5D893]">
+      {value}
+    </div>
+  );
+}
+
+function OwnerInfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-[18px] border border-white/[0.07] bg-[#121821] px-3 py-2.5">
+      <div className="min-w-0 text-[13px] font-medium text-white/62">{label}</div>
+      <div className="shrink-0">
+        <OwnerInfoValue value={value} />
+      </div>
+    </div>
+  );
+}
+
+const hasOwnerObjectInfo = (card: Pick<OwnerCrmCard, "objectAddress" | "objectComplex" | "objectPrice" | "objectLink">) =>
+  [card.objectAddress, card.objectComplex, card.objectPrice, card.objectLink].some((value) => value.trim());
+
+function OwnerObjectPreviewCard({ card }: { card: OwnerCrmCard }) {
+  const rows = [
+    { label: "Адрес", value: card.objectAddress.trim() },
+    { label: "ЖК", value: card.objectComplex.trim() },
+    { label: "Ссылка", value: card.objectLink.trim(), compact: true },
+  ].filter((item) => item.value);
+
+  return (
+    <div className="rounded-[20px] border border-white/[0.08] bg-[#121821] p-3.5">
+      <div className="flex items-start justify-between gap-3">
+        <div className="inline-flex min-h-[32px] items-center rounded-full border border-[#E8C67B]/24 bg-[#E8C67B]/10 px-3 text-[12px] font-medium text-[#F3D58C]">
+          {card.dealType || "Объект"}
+        </div>
+        {card.objectPrice.trim() ? <div className="text-right text-[13px] font-medium text-white">{card.objectPrice.trim()}</div> : null}
+      </div>
+
+      {rows.length ? (
+        <div className="mt-3 space-y-2">
+          {rows.map((item) => (
+            <div key={item.label} className="rounded-[16px] border border-white/[0.06] bg-white/[0.02] px-3 py-2.5">
+              <div className="text-[11px] font-medium text-white/42">{item.label}</div>
+              <div className={["mt-1 text-[13px] leading-5 text-white", item.compact ? "truncate" : "break-words"].join(" ")}>{item.value}</div>
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function PropertyCardModal({
+  card,
+  onClose,
+}: {
+  card: CrmCard | null;
+  onClose: () => void;
+}) {
+  if (!card || isOwnerCrmCard(card)) {
+    return null;
+  }
+
+  return (
+    <>
+      <motion.button
+        type="button"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.18 }}
+        onClick={onClose}
+        className="fixed inset-0 z-[100] bg-[rgba(5,8,12,0.76)] backdrop-blur-[10px]"
+        aria-label="Закрыть просмотр объекта"
+      />
+
+      <motion.div
+        initial={{ opacity: 0, y: 18, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 18, scale: 0.98 }}
+        transition={{ duration: 0.2, ease: "easeOut" }}
+        className="fixed inset-x-4 top-20 z-[110] mx-auto w-full max-w-[420px] overflow-hidden rounded-[28px] border border-white/[0.08] bg-[#0F151D] shadow-[0_32px_70px_rgba(0,0,0,0.42)]"
+      >
+        <div className="relative p-5">
+          <button
+            type="button"
+            onClick={onClose}
+            className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full border border-white/[0.08] bg-[#151C25] text-white/62 transition-all hover:bg-[#19212C] hover:text-white"
+            aria-label="Закрыть карточку объекта"
+          >
+            <X className="h-4 w-4" />
+          </button>
+
+          <div className="pr-12">
+            <div className="inline-flex min-h-[32px] items-center rounded-full border border-[#E8C67B]/24 bg-[#E8C67B]/10 px-3 text-[12px] font-medium text-[#F3D58C]">
+              {card.tag}
+            </div>
+            <div className="mt-4 text-[24px] font-semibold leading-8 tracking-tight text-white">{card.title}</div>
+            <div className="mt-2 text-[14px] text-white/46">{card.status}</div>
           </div>
-          <Badge className="rounded-full border-0 bg-white/[0.05] px-2 py-0.5 text-[9px] font-medium text-white/62 hover:bg-white/[0.05]">
-            {card.phoneType}
-          </Badge>
+
+          <div className="mt-5 space-y-3">
+            <div className="rounded-[18px] border border-white/[0.07] bg-[#141B24] px-4 py-3">
+              <div className="text-[12px] font-medium text-white/42">Адрес</div>
+              <div className="mt-1 text-[14px] leading-6 text-white">{card.person || "Не указан"}</div>
+            </div>
+
+            <div className="rounded-[18px] border border-white/[0.07] bg-[#141B24] px-4 py-3">
+              <div className="text-[12px] font-medium text-white/42">Цена</div>
+              <div className="mt-1 text-[16px] font-medium leading-6 text-white">{card.price || "Не указана"}</div>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    </>
+  );
+}
+
+function OwnerCardPreview({ card }: { card: OwnerCrmCard }) {
+  const overdue = isOwnerCardOverdue(card);
+  const PhoneIcon = card.phoneType === "Подменный" ? PhoneOff : Phone;
+
+  return (
+    <div className="grid grid-rows-[auto_auto_auto] gap-1.5">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+        <div className="truncate text-[15px] font-medium leading-5 text-white">{card.fullName}</div>
+        <div className="flex items-center gap-1 whitespace-nowrap text-[12px] text-white/62">
+          <PhoneIcon className="h-3.5 w-3.5 shrink-0 text-[#E8C67B]" />
+          <span>{card.phone}</span>
         </div>
       </div>
 
-      <div className="space-y-1">
-        <div className="inline-flex rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[9px] font-medium text-white/74">
-          {card.stageTitle}
-        </div>
-        <div className={["text-[12px] font-medium", overdue ? "text-[#F29B87]" : "text-[#E8C67B]"].join(" ")}>
-          {formatOwnerActionLine(card)}
-        </div>
+      <div className={["min-w-0 text-[12px] font-medium", overdue ? "text-[#F29B87]" : "text-[#E8C67B]"].join(" ")}>
+        {formatOwnerActionLine(card)}
       </div>
 
       <div className="flex items-end justify-between gap-3">
-        <div className="shrink-0 text-[10px] text-white/44">{card.touchesCount} касания</div>
-        <div className="line-clamp-1 text-right text-[10px] leading-4 text-white/54">{clampCommentPreview(card.comment)}</div>
+        <div className="text-[10px] text-white/44">{card.touchesCount} касания</div>
+        <div className="max-w-[44%] shrink-0 line-clamp-1 text-right text-[10px] leading-4 text-white/54">
+          {clampCommentPreview(card.comment)}
+        </div>
       </div>
     </div>
   );
@@ -1486,12 +1761,16 @@ function StageCard({
   card,
   onArchive,
   onOpen,
+  onEdit,
+  onView,
   onCall,
   onOpenListing,
 }: {
   card: CrmCard;
   onArchive?: () => void;
   onOpen?: () => void;
+  onEdit?: () => void;
+  onView?: () => void;
   onCall?: () => void;
   onOpenListing?: () => void;
 }) {
@@ -1518,10 +1797,15 @@ function StageCard({
   }, [menuOpen]);
 
   return (
-    <motion.div whileTap={{ scale: 0.985 }} transition={{ duration: 0.14 }} className="h-full w-full">
+    <motion.div
+      whileTap={{ scale: 0.985 }}
+      transition={{ duration: 0.14 }}
+      className={["h-full", ownerCard ? "mr-auto w-[calc(100%-2px)]" : "w-full"].join(" ")}
+    >
       <Surface
         className={[
           "h-full w-full rounded-[24px] bg-[#15191F]/92 shadow-[0_10px_28px_rgba(0,0,0,0.18)]",
+          "overflow-visible",
           ownerCard
             ? overdue
               ? "border-[#F29B87]/52 bg-[linear-gradient(180deg,rgba(242,155,135,0.12),rgba(21,25,31,0.96)_30%,rgba(21,25,31,0.96))]"
@@ -1544,23 +1828,23 @@ function StageCard({
               : undefined
           }
           className={[
-            "relative h-full p-3",
+            "relative h-full px-3 py-2.5",
             ownerCard && onOpen ? "cursor-pointer rounded-[24px]" : "",
           ].join(" ")}
         >
           <div className="absolute -left-3 top-[-10px] h-10 w-10 rounded-full bg-[#F2CC7A]/8 blur-2xl" />
           {ownerCard && onArchive ? (
-            <div ref={menuRef} className="absolute right-3 top-3 z-20">
+            <div ref={menuRef} className="absolute right-2.5 top-2.5 z-20">
               <button
                 type="button"
                 onClick={(event) => {
                   event.stopPropagation();
                   setMenuOpen((current) => !current);
                 }}
-                className="flex h-6 w-6 items-center justify-center rounded-full text-white/34 transition-all hover:bg-white/[0.05] hover:text-white/72"
+                className="flex h-8 w-8 items-center justify-center text-white/88 transition-all hover:text-white"
                 aria-label="Действия с карточкой"
               >
-                <MoreHorizontal className="h-4 w-4" />
+                <MoreHorizontal className="h-4.5 w-4.5" />
               </button>
 
               <AnimatePresence initial={false}>
@@ -1570,8 +1854,48 @@ function StageCard({
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -4 }}
                     transition={{ duration: 0.14, ease: "easeOut" }}
-                    className="absolute right-0 top-[calc(100%+6px)] z-30 min-w-[122px] overflow-hidden rounded-[16px] border border-white/10 bg-[#12161D]/98 shadow-[0_16px_30px_rgba(0,0,0,0.32)]"
+                    className="absolute right-0 top-[calc(100%+8px)] z-40 min-w-[196px] overflow-hidden rounded-[18px] border border-white/12 bg-[#0F141C] shadow-[0_22px_40px_rgba(0,0,0,0.42)]"
                   >
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setMenuOpen(false);
+                        onEdit?.();
+                      }}
+                      className="w-full px-4 py-3 text-left text-[13px] font-medium text-white transition-colors hover:bg-white/[0.05]"
+                    >
+                      Редактировать
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setMenuOpen(false);
+                        onCall?.();
+                      }}
+                      className="w-full px-4 py-3 text-left text-[13px] font-medium text-white/84 transition-colors hover:bg-white/[0.05]"
+                    >
+                      Позвонить
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        if (!ownerCard.objectLink.trim()) {
+                          return;
+                        }
+                        setMenuOpen(false);
+                        onOpenListing?.();
+                      }}
+                      disabled={!ownerCard.objectLink.trim()}
+                      className={[
+                        "w-full px-4 py-3 text-left text-[13px] font-medium transition-colors",
+                        ownerCard.objectLink.trim() ? "text-white/84 hover:bg-white/[0.05]" : "cursor-not-allowed text-white/30",
+                      ].join(" ")}
+                    >
+                      Ссылка
+                    </button>
                     <button
                       type="button"
                       onClick={(event) => {
@@ -1623,6 +1947,17 @@ function StageCard({
                             onClick={(event) => {
                               event.stopPropagation();
                               setMenuOpen(false);
+                              onView?.();
+                            }}
+                            className="w-full px-4 py-3 text-left text-[13px] font-medium text-white transition-colors hover:bg-white/[0.05]"
+                          >
+                            Посмотреть
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setMenuOpen(false);
                               onArchive();
                             }}
                             className="w-full px-4 py-3 text-left text-[13px] font-medium text-white/84 transition-colors hover:bg-white/[0.05]"
@@ -1639,39 +1974,8 @@ function StageCard({
           ) : null}
           <div className="relative">
             {ownerCard ? (
-              <div className="pr-8">
+              <div className="pr-14">
                 <OwnerCardPreview card={ownerCard} />
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-[linear-gradient(180deg,rgba(17,25,36,0),rgba(17,25,36,0.92)_70%,rgba(17,25,36,0.98))]" />
-                <div className="absolute bottom-2.5 right-2.5 z-10 flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onCall?.();
-                    }}
-                    className="pointer-events-auto flex h-8 items-center gap-1.5 rounded-full border border-white/[0.08] bg-[#151D27]/96 px-2.5 text-[11px] font-medium text-white transition-all hover:bg-[#1A2330]"
-                  >
-                    <Phone className="h-3.5 w-3.5 text-[#E8C67B]" />
-                    Позвонить
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onOpenListing?.();
-                    }}
-                    disabled={!ownerCard.objectLink.trim()}
-                    className={[
-                      "pointer-events-auto flex h-8 items-center gap-1.5 rounded-full border px-2.5 text-[11px] font-medium transition-all",
-                      ownerCard.objectLink.trim()
-                        ? "border-white/[0.08] bg-[#151D27]/96 text-white hover:bg-[#1A2330]"
-                        : "cursor-not-allowed border-white/[0.05] bg-[#151D27]/50 text-white/30",
-                    ].join(" ")}
-                  >
-                    <Building2 className={["h-3.5 w-3.5", ownerCard.objectLink.trim() ? "text-[#E8C67B]" : "text-white/22"].join(" ")} />
-                    Объявление
-                  </button>
-                </div>
               </div>
             ) : (
               <div className="grid h-full grid-rows-[auto_1fr_auto] gap-2.5">
@@ -1727,6 +2031,7 @@ function FormField({
   required = false,
   error = "",
   hint = "",
+  className = "",
 }: {
   label: string;
   value: string;
@@ -1737,11 +2042,23 @@ function FormField({
   required?: boolean;
   error?: string;
   hint?: string;
+  className?: string;
 }) {
   const fieldId = useId();
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  useEffect(() => {
+    if (!multiline || !textareaRef.current) {
+      return;
+    }
+
+    textareaRef.current.style.height = "0px";
+    const nextHeight = Math.min(Math.max(textareaRef.current.scrollHeight, 72), 220);
+    textareaRef.current.style.height = `${nextHeight}px`;
+  }, [multiline, value]);
 
   return (
-    <div className="space-y-1.5">
+    <div className={["space-y-1.5", className].join(" ").trim()}>
       <div className="flex items-center gap-2">
         <label htmlFor={fieldId} className="text-[12px] font-medium text-white/62">
           {label}
@@ -1751,13 +2068,14 @@ function FormField({
       <div className="relative">
         {multiline ? (
           <textarea
+            ref={textareaRef}
             id={fieldId}
             value={value}
             onChange={(event) => onChange(event.target.value)}
             placeholder={placeholder}
-            rows={4}
+            rows={1}
             className={[
-              "w-full resize-none rounded-[18px] border bg-[#121821] px-4 py-2.5 text-[14px] text-white outline-none placeholder:text-white/24",
+              "min-h-[72px] w-full resize-none overflow-hidden rounded-[18px] border bg-[#121821] px-4 py-3 text-[14px] leading-6 text-white outline-none placeholder:text-white/24 whitespace-pre-wrap break-words [overflow-wrap:anywhere]",
               error
                 ? "border-[#F2A27A]/60 shadow-[0_0_0_1px_rgba(242,162,122,0.16)]"
                 : "border-white/[0.1]",
@@ -1945,14 +2263,14 @@ function FormSection({
         <button
           type="button"
           onClick={onToggle}
-          className="flex w-full items-center justify-between px-4 py-3.5 text-left"
+          className="flex w-full items-center justify-between px-4 py-2.5 text-left"
         >
           <div className="space-y-1">
-            <div className="text-[16px] font-medium text-white">{title}</div>
+            <div className="text-[14px] font-medium text-white">{title}</div>
             {summary ? (
               <div
                 className={[
-                  "inline-flex rounded-full border px-2.5 py-1 text-[10px] font-medium",
+                  "inline-flex rounded-full border px-2.5 py-0.5 text-[9px] font-medium",
                   complete
                     ? "border-[#E8C67B]/30 bg-[#E8C67B]/12 text-[#F7D992]"
                     : "border-white/10 bg-white/[0.04] text-white/38",
@@ -1962,8 +2280,8 @@ function FormSection({
               </div>
             ) : null}
           </div>
-          <div className="flex h-9 w-9 items-center justify-center rounded-full border border-white/[0.08] bg-[#161C25] text-[#E8C67B]">
-            <ChevronRight className={["h-4 w-4 transition-transform", open ? "rotate-90" : ""].join(" ")} />
+          <div className="flex h-7 w-7 items-center justify-center rounded-full border border-white/[0.08] bg-[#161C25] text-[#E8C67B]">
+            <ChevronRight className={["h-3.5 w-3.5 transition-transform", open ? "rotate-90" : ""].join(" ")} />
           </div>
         </button>
         <AnimatePresence initial={false}>
@@ -1981,6 +2299,109 @@ function FormSection({
         </AnimatePresence>
       </CardContent>
     </Surface>
+  );
+}
+
+function AddressSuggestField({
+  value,
+  loading,
+  error = "",
+  open,
+  suggestions,
+  onChange,
+  onSelect,
+  onClose,
+  onFocus,
+}: {
+  value: string;
+  loading: boolean;
+  error?: string;
+  open: boolean;
+  suggestions: AddressSuggestion[];
+  onChange: (value: string) => void;
+  onSelect: (suggestion: AddressSuggestion) => void;
+  onClose: () => void;
+  onFocus: () => void;
+}) {
+  const fieldId = useId();
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, [open, onClose]);
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center gap-2">
+        <label htmlFor={fieldId} className="text-[12px] font-medium text-white/62">
+          Адрес
+        </label>
+      </div>
+
+      <div ref={wrapperRef} className={["relative", open ? "z-[220]" : "z-10"].join(" ")}>
+        <div className="relative">
+          <Input
+            id={fieldId}
+            value={value}
+            onChange={(event) => onChange(event.target.value)}
+            onFocus={onFocus}
+            placeholder="Начни вводить адрес"
+            className={[
+              "h-11 rounded-[18px] bg-[#121821] pl-10 pr-10 text-white placeholder:text-white/24",
+              error ? "border-[#F2A27A]/60 shadow-[0_0_0_1px_rgba(242,162,122,0.16)]" : "border-white/[0.1]",
+            ].join(" ")}
+          />
+          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/24" />
+          {loading ? <Clock3 className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-white/28" /> : null}
+        </div>
+
+        <AnimatePresence initial={false}>
+          {open ? (
+            <motion.div
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.16, ease: "easeOut" }}
+              className="absolute left-0 right-0 top-[calc(100%+8px)] z-[120] overflow-hidden rounded-[18px] border border-white/10 bg-[#11161D] shadow-[0_18px_40px_rgba(0,0,0,0.36)]"
+            >
+              {suggestions.length > 0 ? (
+                suggestions.map((suggestion) => (
+                  <button
+                    key={suggestion.unrestrictedValue || suggestion.value}
+                    type="button"
+                    onClick={() => onSelect(suggestion)}
+                    className="w-full border-b border-white/[0.06] px-4 py-3 text-left last:border-b-0 hover:bg-white/[0.04]"
+                  >
+                    <div className="text-[13px] font-medium text-white">{suggestion.value}</div>
+                    {suggestion.unrestrictedValue && suggestion.unrestrictedValue !== suggestion.value ? (
+                      <div className="mt-1 text-[11px] leading-4 text-white/42">{suggestion.unrestrictedValue}</div>
+                    ) : null}
+                  </button>
+                ))
+              ) : (
+                <div className="px-4 py-3 text-[12px] text-white/42">{loading ? "Ищем адрес..." : "Ничего не найдено"}</div>
+              )}
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+      </div>
+
+      {error ? <div className="text-[11px] leading-4 text-[#F2A27A]">{error}</div> : null}
+      {!error ? <div className="text-[11px] leading-4 text-white/28">Выбери подсказку, и город, улица, дом заполнятся автоматически</div> : null}
+    </div>
   );
 }
 
@@ -2029,19 +2450,75 @@ function FormScreenShell({
   onClose,
   children,
   footer,
-}: React.PropsWithChildren<{ title: string; onClose: () => void; footer: React.ReactNode }>) {
-  return (
-    <Screen>
-      <div className="relative min-h-[calc(100dvh-140px)] px-4 pb-32 pt-4">
-        <div className="mb-4 grid grid-cols-[44px_1fr_44px] items-center gap-2">
-          <HeaderAction onClick={onClose}>
-            <ArrowLeft className="h-5 w-5" />
-          </HeaderAction>
-          <div className="text-center text-[24px] font-semibold tracking-tight text-white">{title}</div>
-          <div className="h-11 w-11" />
-        </div>
+  headerMode = "default",
+  enableSwipeBack = false,
+}: React.PropsWithChildren<{
+  title: string;
+  onClose: () => void;
+  footer: React.ReactNode;
+  headerMode?: "default" | "backOnly";
+  enableSwipeBack?: boolean;
+}>) {
+  const swipeStartX = useRef<number | null>(null);
+  const swipeStartY = useRef<number | null>(null);
 
-        <div className="mx-auto mb-4 h-px w-full max-w-[300px] bg-gradient-to-r from-transparent via-white/6 to-transparent" />
+  const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+    if (!enableSwipeBack) {
+      return;
+    }
+
+    const touch = event.changedTouches[0];
+    swipeStartX.current = touch?.clientX ?? null;
+    swipeStartY.current = touch?.clientY ?? null;
+  };
+
+  const handleTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
+    if (!enableSwipeBack || swipeStartX.current === null || swipeStartY.current === null) {
+      return;
+    }
+
+    const touch = event.changedTouches[0];
+    const endX = touch?.clientX ?? swipeStartX.current;
+    const endY = touch?.clientY ?? swipeStartY.current;
+    const deltaX = endX - swipeStartX.current;
+    const deltaY = Math.abs(endY - swipeStartY.current);
+    const startedFromEdge = swipeStartX.current <= 36;
+
+    swipeStartX.current = null;
+    swipeStartY.current = null;
+
+    if (startedFromEdge && deltaX >= 88 && deltaY <= 64) {
+      onClose();
+    }
+  };
+
+  return (
+    <Screen className="h-[calc(100dvh-48px)] overflow-y-auto overflow-x-hidden overscroll-contain">
+      <div
+        className="relative min-h-full px-4 pb-32 pt-4"
+        style={{ WebkitOverflowScrolling: "touch" }}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
+        {headerMode === "backOnly" ? (
+          <div className="mb-4 flex items-center justify-start">
+            <HeaderAction onClick={onClose}>
+              <ArrowLeft className="h-5 w-5" />
+            </HeaderAction>
+          </div>
+        ) : (
+          <>
+            <div className="mb-4 grid grid-cols-[44px_1fr_44px] items-center gap-2">
+              <HeaderAction onClick={onClose}>
+                <ArrowLeft className="h-5 w-5" />
+              </HeaderAction>
+              <div className="text-center text-[24px] font-semibold tracking-tight text-white">{title}</div>
+              <div className="h-11 w-11" />
+            </div>
+
+            <div className="mx-auto mb-4 h-px w-full max-w-[300px] bg-gradient-to-r from-transparent via-white/6 to-transparent" />
+          </>
+        )}
 
         <div className="space-y-3">
           {children}
@@ -2362,19 +2839,118 @@ function TasksScreen({ onOpenCreate }: { onOpenCreate: () => void }) {
   );
 }
 
+function PropertyScenarioScreen({
+  onClose,
+  onSelect,
+}: {
+  onClose: () => void;
+  onSelect: (scenario: PropertyCreateScenario) => void;
+}) {
+  const scenarios: Array<{ label: string; scenario: PropertyCreateScenario; available: boolean }> = [
+    {
+      label: "Аренда · Жилая",
+      scenario: { dealType: "rent", segment: "residential" },
+      available: true,
+    },
+    {
+      label: "Продажа · Жилая",
+      scenario: { dealType: "sale", segment: "residential" },
+      available: false,
+    },
+    {
+      label: "Аренда · Коммерция",
+      scenario: { dealType: "rent", segment: "commercial" },
+      available: false,
+    },
+    {
+      label: "Продажа · Коммерция",
+      scenario: { dealType: "sale", segment: "commercial" },
+      available: false,
+    },
+  ];
+
+  return (
+    <FormScreenShell title="Новый объект" onClose={onClose} footer={<div className="h-4" />}>
+      <div className="space-y-4">
+        <Surface className="rounded-[24px] border-white/[0.08] bg-[#10161E]">
+          <CardContent className="space-y-4 p-4">
+            <div className="space-y-1">
+              <div className="text-[18px] font-semibold text-white">Сценарий объекта</div>
+              <div className="text-[13px] leading-5 text-white/48">
+                Выбираешь готовый сценарий, дальше открывается нужная форма объекта.
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {scenarios.map((item) => (
+                <button
+                  key={item.label}
+                  type="button"
+                  disabled={!item.available}
+                  onClick={() => {
+                    if (!item.available || !isSupportedPropertyScenario(item.scenario)) {
+                      return;
+                    }
+
+                    onSelect(item.scenario);
+                  }}
+                  className={[
+                    "rounded-[18px] border px-4 py-4 text-left transition-all",
+                    item.available
+                      ? "border-[#E8C67B]/28 bg-[linear-gradient(180deg,rgba(232,198,123,0.14),rgba(255,255,255,0.02)_100%)]"
+                      : "cursor-not-allowed border-white/8 bg-[#141922] opacity-60",
+                  ].join(" ")}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className={item.available ? "text-[15px] font-medium text-[#F7D992]" : "text-[15px] font-medium text-white/72"}>
+                        {item.label}
+                      </div>
+                      <div className="text-[12px] text-white/42">
+                        {item.available ? "Открывает текущую форму заполнения" : "Закрыто, добавим отдельную форму"}
+                      </div>
+                    </div>
+                    {item.available ? (
+                      <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-[#F7D992]" />
+                    ) : (
+                      <span className="text-[11px] font-medium text-white/28">Скоро</span>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            <div className="rounded-[18px] border border-[#E8C67B]/16 bg-[linear-gradient(180deg,rgba(232,198,123,0.08),rgba(255,255,255,0.02)_100%)] px-4 py-3 text-[13px] leading-5 text-white/58">
+              Сейчас открыта ветка по XML ЦИАН: <span className="font-medium text-[#F7D992]">Аренда · Жилая · flatRent</span>.
+            </div>
+          </CardContent>
+        </Surface>
+      </div>
+    </FormScreenShell>
+  );
+}
+
 function PropertyCreateScreen({
   onClose,
   onCreated,
+  onAddOwner,
   linkedOwner,
+  initialDraft,
+  onDraftChange,
   ownerOptions,
+  scenario,
 }: {
   onClose: () => void;
   onCreated: (result: PropertyCreateResult) => void;
+  onAddOwner: () => void;
   linkedOwner?: PropertyOwnerOption | null;
+  initialDraft?: PropertyFormState | null;
+  onDraftChange?: (draft: PropertyFormState) => void;
   ownerOptions: PropertyOwnerOption[];
+  scenario?: PropertyCreateScenario | null;
 }) {
   const createInitialForm = () => {
-    const next = initialPropertyForm();
+    const next = initialDraft ? clonePropertyForm(initialDraft) : initialPropertyForm();
 
     if (linkedOwner) {
       next.ownerId = linkedOwner.id;
@@ -2394,10 +2970,18 @@ function PropertyCreateScreen({
   const [openLocationExtras, setOpenLocationExtras] = useState(false);
   const [openLayoutExtras, setOpenLayoutExtras] = useState(false);
   const [openMediaExtras, setOpenMediaExtras] = useState(false);
+  const [addressQuery, setAddressQuery] = useState(() => composePropertyAddress(createInitialForm().location));
+  const [addressSuggestions, setAddressSuggestions] = useState<AddressSuggestion[]>([]);
+  const [addressSuggestOpen, setAddressSuggestOpen] = useState(false);
+  const [addressSuggestLoading, setAddressSuggestLoading] = useState(false);
+  const [addressSuggestError, setAddressSuggestError] = useState("");
+  const [addressSuggestInteracted, setAddressSuggestInteracted] = useState(false);
   const photoInputRef = useRef<HTMLInputElement | null>(null);
+  const skipAddressSuggestRequestRef = useRef(false);
+  const latestAddressSuggestRequestRef = useRef(0);
 
   useEffect(() => {
-    if (!linkedOwner || form.ownerId) {
+    if (!linkedOwner || form.ownerId === linkedOwner.id) {
       return;
     }
 
@@ -2407,6 +2991,61 @@ function PropertyCreateScreen({
       ownerLabel: [linkedOwner.name, linkedOwner.phone].filter(Boolean).join(" · "),
     }));
   }, [form.ownerId, linkedOwner]);
+
+  useEffect(() => {
+    onDraftChange?.(form);
+  }, [form, onDraftChange]);
+
+  useEffect(() => {
+    const query = addressQuery.trim();
+
+    if (skipAddressSuggestRequestRef.current) {
+      skipAddressSuggestRequestRef.current = false;
+      return;
+    }
+
+    if (query.length < 3) {
+      setAddressSuggestions([]);
+      setAddressSuggestOpen(false);
+      setAddressSuggestLoading(false);
+      setAddressSuggestError("");
+      return;
+    }
+
+    const requestId = latestAddressSuggestRequestRef.current + 1;
+    latestAddressSuggestRequestRef.current = requestId;
+    setAddressSuggestLoading(true);
+    setAddressSuggestError("");
+
+    const timeoutId = window.setTimeout(async () => {
+      try {
+        const response = await postJson<{ suggestions: AddressSuggestion[] }>("/api/address/suggest", { query });
+
+        if (latestAddressSuggestRequestRef.current !== requestId) {
+          return;
+        }
+
+        setAddressSuggestions(response.suggestions ?? []);
+        setAddressSuggestOpen(addressSuggestInteracted);
+      } catch (error) {
+        if (latestAddressSuggestRequestRef.current !== requestId) {
+          return;
+        }
+
+        setAddressSuggestions([]);
+        setAddressSuggestOpen(addressSuggestInteracted);
+        setAddressSuggestError(error instanceof Error ? error.message : "Не удалось получить подсказки адреса");
+      } finally {
+        if (latestAddressSuggestRequestRef.current === requestId) {
+          setAddressSuggestLoading(false);
+        }
+      }
+    }, 280);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [addressQuery, addressSuggestInteracted]);
 
   const ownerSelectOptions = useMemo(
     () =>
@@ -2610,6 +3249,57 @@ function PropertyCreateScreen({
     setOpenDropdown(null);
   };
 
+  const handleAddressSuggestionSelect = (suggestion: AddressSuggestion) => {
+    const city =
+      suggestion.data.city.trim() ||
+      suggestion.data.settlement.trim() ||
+      suggestion.data.region.trim();
+    const blockType = suggestion.data.blockTypeFull.trim().toLowerCase();
+    const isBuilding = blockType.includes("корп");
+    const isBlock = blockType.includes("стро");
+
+    skipAddressSuggestRequestRef.current = true;
+    setAddressQuery(suggestion.value);
+    setAddressSuggestOpen(false);
+    setAddressSuggestInteracted(false);
+    setAddressSuggestError("");
+    setForm((previous) => ({
+      ...previous,
+      location: {
+        ...previous.location,
+        city,
+        street: suggestion.data.streetWithType.trim() || suggestion.data.street.trim(),
+        houseNumber: suggestion.data.house.trim(),
+        buildingNumber: isBuilding ? suggestion.data.block.trim() : "",
+        blockNumber: isBlock ? suggestion.data.block.trim() : "",
+        lat: suggestion.data.geoLat.trim(),
+        lng: suggestion.data.geoLon.trim(),
+      },
+    }));
+
+    void (async () => {
+      try {
+        const response = await postJson<CleanAddressResponse>("/api/address/clean", {
+          query: suggestion.unrestrictedValue || suggestion.value,
+        });
+
+        const firstMetro = response.address?.metro?.find((station) => station.name)?.name?.trim() ?? "";
+        const entrance = response.address?.entrance?.trim() ?? "";
+
+        setForm((previous) => ({
+          ...previous,
+          location: {
+            ...previous.location,
+            undergroundStation: firstMetro,
+            entranceNumber: entrance || previous.location.entranceNumber,
+          },
+        }));
+      } catch {
+        // ignore clean enrichment errors to avoid blocking address selection
+      }
+    })();
+  };
+
   const handlePhotoUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) {
       return;
@@ -2689,7 +3379,7 @@ function PropertyCreateScreen({
           title: propertyTitle,
           price: form.pricing.rentPrice.trim() ? `${form.pricing.rentPrice.trim()} ₽/мес` : "Цена не указана",
           status: "Новый объект",
-          person: composePropertyAddress(form.location) || "Адрес не заполнен",
+          person: formatPropertyLocationPreview(form.location) || "Адрес не заполнен",
           tag: "Объект",
         },
       });
@@ -2719,36 +3409,18 @@ function PropertyCreateScreen({
         </div>
       }
     >
-      <FormSection
-        title="База"
-        open={openSections.basic}
-        onToggle={() => toggleSection("basic")}
-        summary={formatPropertySummary(form) || "Нужно заполнить базу"}
-        complete={Boolean(form.ownerId && form.basicInfo.internalTitle.trim())}
-      >
-        <div className="space-y-4">
-          <div className="flex flex-wrap gap-2">
-            {propertyFlowPills.map((pill) => (
-              <div
-                key={pill}
-                className="rounded-[15px] border border-[#E8C67B]/35 bg-[linear-gradient(180deg,rgba(232,198,123,0.14),rgba(20,25,34,0.92))] px-3 py-1.5 text-[13px] font-medium text-[#F7D992]"
-              >
-                {pill}
-              </div>
-            ))}
-          </div>
+      <Surface className="rounded-[24px] border-white/[0.08] bg-[#10161E]">
+        <CardContent className="space-y-4 p-4">
+          <div className="text-[14px] font-medium text-white">База</div>
 
-          <div className="grid grid-cols-2 gap-2">
-            {propertyTypeOptions.map((option) => (
-              <FormChip
-                key={option.value}
-                active={form.propertyType === option.value}
-                onClick={() => setForm((previous) => ({ ...previous, propertyType: option.value }))}
-              >
-                {option.label}
-              </FormChip>
-            ))}
-          </div>
+          <Button
+            type="button"
+            onClick={onAddOwner}
+            className="h-11 w-full rounded-[18px] border border-white/[0.08] bg-[#151D27] text-white hover:bg-[#1A2330]"
+          >
+            <Plus className="h-4 w-4" />
+            Добавить собственника
+          </Button>
 
           <SelectField
             label="Собственник"
@@ -2762,56 +3434,58 @@ function PropertyCreateScreen({
             required
             error={propertyFieldErrors.ownerId}
           />
+        </CardContent>
+      </Surface>
 
-          <FormField
-            label="Краткое название объекта"
-            value={form.basicInfo.internalTitle}
-            onChange={(value) => setBasicField("internalTitle", value)}
-            placeholder="Например 2к River Park 180к"
-            required
-            error={propertyFieldErrors.internalTitle}
-          />
-
-          <FormField
-            label="ЖК"
-            value={form.basicInfo.residentialComplexName}
-            onChange={(value) => setBasicField("residentialComplexName", value)}
-            placeholder="Название ЖК"
-          />
-
-          <FormField
-            label="Короткое описание"
-            value={form.basicInfo.shortDescription}
-            onChange={(value) => setBasicField("shortDescription", value)}
-            placeholder="Короткий текст для CRM"
-            multiline
-          />
-
-          <FormField
-            label="Полное описание"
-            value={form.basicInfo.fullDescription}
-            onChange={(value) => setBasicField("fullDescription", value)}
-            placeholder="Полное описание для сайта и выгрузки"
-            multiline
-          />
-        </div>
-      </FormSection>
-
-      <FormSection
-        title="Расположение"
-        open={openSections.location}
-        onToggle={() => toggleSection("location")}
-        summary={composePropertyAddress(form.location) || "Нужен адрес"}
-        complete={Boolean(form.location.city.trim() && form.location.street.trim() && form.location.houseNumber.trim())}
-      >
+      <FormSection title="Расположение" open={openSections.location} onToggle={() => toggleSection("location")}>
         <div className="space-y-4">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <AddressSuggestField
+            value={addressQuery}
+            loading={addressSuggestLoading}
+            error={addressSuggestError}
+            open={addressSuggestOpen}
+            suggestions={addressSuggestions}
+            onFocus={() => {
+              setAddressSuggestInteracted(true);
+              const query = addressQuery.trim();
+              const shouldOpen = query.length >= 3 && (addressSuggestions.length > 0 || addressSuggestLoading || Boolean(addressSuggestError));
+              setAddressSuggestOpen(shouldOpen);
+            }}
+            onChange={(value) => {
+              setAddressQuery(value);
+              setAddressSuggestInteracted(true);
+              setAddressSuggestError("");
+            }}
+            onSelect={handleAddressSuggestionSelect}
+            onClose={() => {
+              setAddressSuggestOpen(false);
+              setAddressSuggestInteracted(false);
+            }}
+          />
+
+          {form.location.undergroundStation.trim() ? (
+            <div className="grid grid-cols-12 gap-3">
+              <div className="col-span-12 sm:col-span-6">
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <div className="text-[12px] font-medium text-white/62">Метро</div>
+                  </div>
+                  <div className="flex h-11 items-center rounded-[18px] border border-[#E8C67B]/28 bg-[linear-gradient(180deg,rgba(232,198,123,0.12),rgba(255,255,255,0.02)_100%)] px-4 text-[14px] font-medium text-[#F5D893]">
+                    м. {form.location.undergroundStation}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          <div className="grid grid-cols-12 gap-3">
             <FormField
               label="Город"
               value={form.location.city}
               onChange={(value) => setLocationField("city", value)}
               required
               error={propertyFieldErrors.city}
+              className="col-span-4"
             />
             <FormField
               label="Улица"
@@ -2819,6 +3493,7 @@ function PropertyCreateScreen({
               onChange={(value) => setLocationField("street", value)}
               required
               error={propertyFieldErrors.street}
+              className="col-span-5"
             />
             <FormField
               label="Дом"
@@ -2826,53 +3501,29 @@ function PropertyCreateScreen({
               onChange={(value) => setLocationField("houseNumber", value)}
               required
               error={propertyFieldErrors.houseNumber}
+              className="col-span-3"
             />
           </div>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-12 gap-3">
             <FormField
               label="Этаж"
               value={form.location.floorNumber}
               onChange={(value) => setLocationField("floorNumber", value.replace(/[^\d]/g, ""))}
+              className="col-span-3"
             />
             <FormField
-              label="Этажей в доме"
+              label="Этажей"
               value={form.location.totalFloors}
               onChange={(value) => setLocationField("totalFloors", value.replace(/[^\d]/g, ""))}
+              className="col-span-5"
             />
             <FormField
               label="Подъезд"
               value={form.location.entranceNumber}
               onChange={(value) => setLocationField("entranceNumber", value)}
+              className="col-span-4"
             />
-          </div>
-
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <FormField
-              label="Метро"
-              value={form.location.undergroundStation}
-              onChange={(value) => setLocationField("undergroundStation", value)}
-            />
-            <FormField
-              label="Минут до метро"
-              value={form.location.undergroundTimeMinutes}
-              onChange={(value) => setLocationField("undergroundTimeMinutes", value.replace(/[^\d]/g, ""))}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <div className="text-[12px] font-medium text-white/62">Как добираться</div>
-            <div className="flex gap-2">
-              {metroTransportOptions.map((option) => (
-                <FormChip
-                  key={option.value}
-                  active={form.location.undergroundTransportType === option.value}
-                  onClick={() => setLocationField("undergroundTransportType", option.value)}
-                >
-                  {option.label}
-                </FormChip>
-              ))}
-            </div>
           </div>
 
           <InlineAccordionSection
@@ -2880,150 +3531,63 @@ function PropertyCreateScreen({
             open={openLocationExtras}
             onToggle={() => setOpenLocationExtras((current) => !current)}
           >
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="grid grid-cols-12 gap-3">
+              <FormField
+                label="ЖК"
+                value={form.basicInfo.residentialComplexName}
+                onChange={(value) => setBasicField("residentialComplexName", value)}
+                placeholder="Название ЖК"
+                className="col-span-12"
+              />
+            </div>
+
+            <div className="grid grid-cols-12 gap-3">
               <FormField
                 label="Корпус"
                 value={form.location.buildingNumber}
                 onChange={(value) => setLocationField("buildingNumber", value)}
+                className="col-span-3"
               />
               <FormField
                 label="Строение"
                 value={form.location.blockNumber}
                 onChange={(value) => setLocationField("blockNumber", value)}
+                className="col-span-3"
+              />
+              <FormField
+                label="Квартира"
+                value={form.location.apartmentNumber}
+                onChange={(value) => setLocationField("apartmentNumber", value)}
+                className="col-span-6"
               />
             </div>
 
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <FormField
-                label="Номер квартиры"
-                value={form.location.apartmentNumber}
-                onChange={(value) => setLocationField("apartmentNumber", value)}
-              />
+            <div className="grid grid-cols-12 gap-3">
               <FormField
                 label="Кадастровый номер"
                 value={form.location.cadastralNumber}
                 onChange={(value) => setLocationField("cadastralNumber", value)}
+                className="col-span-12"
               />
             </div>
           </InlineAccordionSection>
         </div>
       </FormSection>
 
-      <FormSection
-        title="Цена и условия"
-        open={openSections.pricing}
-        onToggle={() => toggleSection("pricing")}
-        summary={form.pricing.rentPrice.trim() ? `${form.pricing.rentPrice.trim()} ₽ / мес` : "Нужна цена"}
-        complete={Boolean(form.pricing.rentPrice.trim())}
-      >
+      <FormSection title="Параметры квартиры" open={openSections.layout} onToggle={() => toggleSection("layout")}>
         <div className="space-y-4">
-          <FormField
-            label="Цена аренды"
-            value={form.pricing.rentPrice}
-            onChange={(value) => setPricingField("rentPrice", value.replace(/[^\d\s]/g, ""))}
-            suffix="₽"
-            required
-            error={propertyFieldErrors.rentPrice}
-          />
-
-          <div className="space-y-2">
-            <div className="text-[12px] font-medium text-white/62">Валюта</div>
-            <div className="rounded-[18px] border border-[#E8C67B]/40 bg-[#141922] px-4 py-3 text-[14px] font-medium text-[#F7D992]">
-              RUB
-            </div>
+          <div className="grid grid-cols-2 gap-2">
+            {propertyTypeOptions.map((option) => (
+              <FormChip
+                key={option.value}
+                active={form.propertyType === option.value}
+                onClick={() => setForm((previous) => ({ ...previous, propertyType: option.value }))}
+              >
+                {option.label}
+              </FormChip>
+            ))}
           </div>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <FormField
-              label="Залог / депозит"
-              value={form.pricing.depositAmount}
-              onChange={(value) => setPricingField("depositAmount", value.replace(/[^\d\s]/g, ""))}
-              suffix="₽"
-            />
-            <FormField
-              label="Комиссия"
-              value={form.pricing.commissionAmount}
-              onChange={(value) => setPricingField("commissionAmount", value.replace(/[^\d\s]/g, ""))}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <div className="text-[12px] font-medium text-white/62">Тип комиссии</div>
-            <div className="flex flex-wrap gap-2">
-              {commissionTypeOptions.map((option) => (
-                <FormChip
-                  key={option.value}
-                  active={form.pricing.commissionType === option.value}
-                  onClick={() => setPricingField("commissionType", option.value)}
-                >
-                  {option.label}
-                </FormChip>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <div className="text-[12px] font-medium text-white/62">Коммунальные</div>
-            <div className="flex flex-wrap gap-2">
-              {utilitiesModeOptions.map((option) => (
-                <FormChip
-                  key={option.value}
-                  active={form.pricing.utilitiesMode === option.value}
-                  onClick={() => setPricingField("utilitiesMode", option.value)}
-                >
-                  {option.label}
-                </FormChip>
-              ))}
-            </div>
-          </div>
-
-          <FormField
-            label="Комментарий по коммунальным"
-            value={form.pricing.utilitiesComment}
-            onChange={(value) => setPricingField("utilitiesComment", value)}
-            placeholder="Например всё кроме счётчиков"
-          />
-
-          <div className="space-y-2">
-            <div className="text-[12px] font-medium text-white/62">Предоплата, месяцев</div>
-            <div className="flex flex-wrap gap-2">
-              {prepaymentMonthOptions.map((option) => (
-                <FormChip
-                  key={option}
-                  active={form.pricing.prepaymentMonths === option}
-                  onClick={() => setPricingField("prepaymentMonths", option)}
-                >
-                  {option}
-                </FormChip>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <div className="text-[12px] font-medium text-white/62">Минимальный срок аренды, месяцев</div>
-            <div className="flex flex-wrap gap-2">
-              {minimumTermOptions.map((option) => (
-                <FormChip
-                  key={option}
-                  active={form.pricing.minimumRentTermMonths === option}
-                  onClick={() => setPricingField("minimumRentTermMonths", option)}
-                >
-                  {option}
-                </FormChip>
-              ))}
-            </div>
-          </div>
-        </div>
-      </FormSection>
-
-      <FormSection
-        title="Параметры квартиры"
-        open={openSections.layout}
-        onToggle={() => toggleSection("layout")}
-        summary={form.layout.totalArea.trim() ? `${form.layout.totalArea.trim()} м²` : "Нужны параметры квартиры"}
-        complete={Boolean(form.layout.totalArea.trim())}
-      >
-        <div className="space-y-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <FormField
               label="Общая площадь"
@@ -3121,20 +3685,7 @@ function PropertyCreateScreen({
         </div>
       </FormSection>
 
-      <FormSection
-        title="Особенности и оснащение"
-        open={openSections.interior}
-        onToggle={() => toggleSection("interior")}
-        summary={
-          [
-            repairTypeOptions.find((option) => option.value === form.interior.repairType)?.label ?? "",
-            furnitureModeOptions.find((option) => option.value === form.interior.furnitureMode)?.label ?? "",
-          ]
-            .filter(Boolean)
-            .join(" · ") || "Можно дополнить позже"
-        }
-        complete={Boolean(form.interior.repairType || form.interior.furnitureMode)}
-      >
+      <FormSection title="Особенности и оснащения" open={openSections.interior} onToggle={() => toggleSection("interior")}>
         <div className="space-y-4">
           <div className="space-y-2">
             <div className="text-[12px] font-medium text-white/62">Ремонт</div>
@@ -3200,18 +3751,6 @@ function PropertyCreateScreen({
           </div>
 
           <div className="space-y-2">
-            <div className="text-[12px] font-medium text-white/62">Связь</div>
-            <div className="flex flex-wrap gap-2">
-              <FormChip active={form.interior.hasInternet} onClick={() => toggleInteriorFlag("hasInternet")}>
-                Интернет
-              </FormChip>
-              <FormChip active={form.interior.hasPhone} onClick={() => toggleInteriorFlag("hasPhone")}>
-                Телефон
-              </FormChip>
-            </div>
-          </div>
-
-          <div className="space-y-2">
             <div className="text-[12px] font-medium text-white/62">Ещё</div>
             <div className="flex flex-wrap gap-2">
               <FormChip active={form.interior.hasWardrobeRoom} onClick={() => toggleInteriorFlag("hasWardrobeRoom")}>
@@ -3234,21 +3773,7 @@ function PropertyCreateScreen({
         </div>
       </FormSection>
 
-      <FormSection
-        title="Дом и подъезд"
-        open={openSections.building}
-        onToggle={() => toggleSection("building")}
-        summary={form.building.parkingTypes.length > 0 ? `${form.building.parkingTypes.length} типа парковки` : "Можно дополнить позже"}
-        complete={
-          Boolean(
-            form.building.passengerLiftsCount ||
-              form.building.cargoLiftsCount ||
-              form.building.parkingTypes.length ||
-              form.building.hasConcierge ||
-              form.building.hasSecurity,
-          )
-        }
-      >
+      <FormSection title="Дом / подъезд" open={openSections.building} onToggle={() => toggleSection("building")}>
         <div className="space-y-4">
           <CounterField
             label="Пассажирских лифтов"
@@ -3296,13 +3821,28 @@ function PropertyCreateScreen({
         </div>
       </FormSection>
 
-      <FormSection
-        title="Медиа"
-        open={openSections.media}
-        onToggle={() => toggleSection("media")}
-        summary={form.media.photos.length > 0 ? `${form.media.photos.length} фото` : "Нужно добавить фото"}
-        complete={form.media.photos.length > 0}
-      >
+      <FormSection title="Описание" open={openSections.publication} onToggle={() => toggleSection("publication")}>
+        <div className="space-y-4">
+          <FormField
+            label="Краткое название объекта"
+            value={form.basicInfo.internalTitle}
+            onChange={(value) => setBasicField("internalTitle", value)}
+            placeholder="Например 2к River Park 180к"
+            required
+            error={propertyFieldErrors.internalTitle}
+          />
+
+          <FormField
+            label="Полное описание"
+            value={form.basicInfo.fullDescription}
+            onChange={(value) => setBasicField("fullDescription", value)}
+            placeholder="Полное описание для сайта и выгрузки"
+            multiline
+          />
+        </div>
+      </FormSection>
+
+      <FormSection title="Медиа" open={openSections.media} onToggle={() => toggleSection("media")}>
         <div className="space-y-4">
           <input
             ref={photoInputRef}
@@ -3379,46 +3919,40 @@ function PropertyCreateScreen({
         </div>
       </FormSection>
 
-      <FormSection
-        title="Публикация / CRM"
-        open={openSections.publication}
-        onToggle={() => toggleSection("publication")}
-        summary={form.publication.externalId || "Настройки публикации"}
-        complete={Boolean(form.publication.externalId)}
-      >
+      <FormSection title="Цена и условия" open={openSections.pricing} onToggle={() => toggleSection("pricing")}>
         <div className="space-y-4">
           <FormField
-            label="Внешний ID"
-            value={form.publication.externalId}
-            onChange={(value) => setPublicationField("externalId", value)}
+            label="Цена аренды"
+            value={form.pricing.rentPrice}
+            onChange={(value) => setPricingField("rentPrice", value.replace(/[^\d\s]/g, ""))}
+            suffix="₽"
             required
-            error={propertyFieldErrors.externalId}
+            error={propertyFieldErrors.rentPrice}
           />
 
-          <div className="space-y-2">
-            <div className="text-[12px] font-medium text-white/62">XML категория</div>
-            <div className="rounded-[18px] border border-white/10 bg-[#141922] px-4 py-3 text-[14px] font-medium text-white">
-              {form.publication.xmlCategory}
-            </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <FormField
+              label="Залог / депозит"
+              value={form.pricing.depositAmount}
+              onChange={(value) => setPricingField("depositAmount", value.replace(/[^\d\s]/g, ""))}
+              suffix="₽"
+            />
+            <FormField
+              label="Комиссия"
+              value={form.pricing.commissionAmount}
+              onChange={(value) => setPricingField("commissionAmount", value.replace(/[^\d\s]/g, ""))}
+              suffix="%"
+            />
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            <FormChip
-              active={form.publication.isReadyForExport}
-              onClick={() => setPublicationField("isReadyForExport", !form.publication.isReadyForExport)}
-            >
-              Готов к выгрузке
-            </FormChip>
-          </div>
-
           <div className="space-y-2">
-            <div className="text-[12px] font-medium text-white/62">Ликвидность</div>
+            <div className="text-[12px] font-medium text-white/62">Коммунальные</div>
             <div className="flex flex-wrap gap-2">
-              {liquidityOptions.map((option) => (
+              {utilitiesModeOptions.map((option) => (
                 <FormChip
                   key={option.value}
-                  active={form.crmMeta.liquidityLevel === option.value}
-                  onClick={() => setCrmMetaField("liquidityLevel", option.value)}
+                  active={form.pricing.utilitiesMode === option.value}
+                  onClick={() => setPricingField("utilitiesMode", option.value)}
                 >
                   {option.label}
                 </FormChip>
@@ -3427,13 +3961,13 @@ function PropertyCreateScreen({
           </div>
 
           <div className="space-y-2">
-            <div className="text-[12px] font-medium text-white/62">Цена относительно рынка</div>
+            <div className="text-[12px] font-medium text-white/62">Счётчики</div>
             <div className="flex flex-wrap gap-2">
-              {marketPriceOptions.map((option) => (
+              {meterModeOptions.map((option) => (
                 <FormChip
                   key={option.value}
-                  active={form.crmMeta.marketPriceLevel === option.value}
-                  onClick={() => setCrmMetaField("marketPriceLevel", option.value)}
+                  active={form.pricing.meterMode === option.value}
+                  onClick={() => setPricingField("meterMode", option.value)}
                 >
                   {option.label}
                 </FormChip>
@@ -3441,15 +3975,38 @@ function PropertyCreateScreen({
             </div>
           </div>
 
-          <FormField
-            label="Комментарий агента"
-            value={form.crmMeta.agentComment}
-            onChange={(value) => setCrmMetaField("agentComment", value)}
-            placeholder="Внутренний комментарий CRM"
-            multiline
-          />
+          <div className="space-y-2">
+            <div className="text-[12px] font-medium text-white/62">Предоплата, месяцев</div>
+            <div className="flex flex-wrap gap-2">
+              {prepaymentMonthOptions.map((option) => (
+                <FormChip
+                  key={option}
+                  active={form.pricing.prepaymentMonths === option}
+                  onClick={() => setPricingField("prepaymentMonths", option)}
+                >
+                  {option}
+                </FormChip>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="text-[12px] font-medium text-white/62">Минимальный срок аренды, месяцев</div>
+            <div className="flex flex-wrap gap-2">
+              {minimumTermOptions.map((option) => (
+                <FormChip
+                  key={option}
+                  active={form.pricing.minimumRentTermMonths === option}
+                  onClick={() => setPricingField("minimumRentTermMonths", option)}
+                >
+                  {option}
+                </FormChip>
+              ))}
+            </div>
+          </div>
         </div>
       </FormSection>
+
     </FormScreenShell>
   );
 }
@@ -3460,7 +4017,7 @@ function OwnerCreateScreen({
   onOpenCreateObject,
 }: {
   onClose: () => void;
-  onCreated: (stageId: string, card: CrmCard) => void;
+  onCreated: (payload: { stageId: string; card: OwnerCrmCard; ownerOption: PropertyOwnerOption }) => void;
   onOpenCreateObject: (owner: PropertyOwnerOption) => void;
 }) {
   const ownerStageOptions = useMemo(
@@ -3479,6 +4036,7 @@ function OwnerCreateScreen({
       nextActionDate: "",
       nextActionTime: "",
       agentExperience: "",
+      clientOnlyState: "",
       leadsState: "",
       showingsState: "",
       commissionPercent: "",
@@ -3503,6 +4061,7 @@ function OwnerCreateScreen({
   });
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const ownerCommentRef = useRef<HTMLTextAreaElement | null>(null);
   const datePickerRef = useRef<HTMLInputElement | null>(null);
   const timePickerRef = useRef<HTMLInputElement | null>(null);
 
@@ -3525,12 +4084,25 @@ function OwnerCreateScreen({
     nextAction: form.nextAction.trim() ? "" : "Выбери действие",
   };
 
+  const objectInfoRequired = form.cooperationState === "Думает";
+  const showCreateObjectAction = form.cooperationState === "Дубль" || form.cooperationState === "Эксклюзив";
+  const objectFieldErrors = {
+    objectAddress: objectInfoRequired && !form.objectAddress.trim() ? "Укажи адрес" : "",
+    objectComplex: objectInfoRequired && !form.objectComplex.trim() ? "Укажи ЖК" : "",
+    objectPrice: objectInfoRequired && !form.objectPrice.trim() ? "Укажи цену" : "",
+    objectLink: objectInfoRequired && !form.objectLink.trim() ? "Укажи ссылку" : "",
+  };
+
   const selectedStage = ownerStageOptions.find((stage) => stage.id === form.stageKey);
   const ownerMissingLabels = [
     !form.fullName.trim() ? "имя" : "",
     !form.phone.trim() ? "телефон" : "",
     !form.stageKey.trim() ? "статус" : "",
     !form.nextAction.trim() ? "действие" : "",
+    objectInfoRequired && !form.objectAddress.trim() ? "адрес объекта" : "",
+    objectInfoRequired && !form.objectComplex.trim() ? "ЖК" : "",
+    objectInfoRequired && !form.objectPrice.trim() ? "цена объекта" : "",
+    objectInfoRequired && !form.objectLink.trim() ? "ссылка на объект" : "",
   ].filter(Boolean);
 
   const ownerCanSave = ownerMissingLabels.length === 0;
@@ -3550,6 +4122,21 @@ function OwnerCreateScreen({
       }));
     }
   }, [form.nextAction, setForm]);
+
+  useEffect(() => {
+    if (form.cooperationState === "Думает") {
+      setOpenOwnerSections((previous) => ({ ...previous, object: true }));
+    }
+  }, [form.cooperationState]);
+
+  useEffect(() => {
+    if (!ownerCommentRef.current) {
+      return;
+    }
+
+    ownerCommentRef.current.style.height = "0px";
+    ownerCommentRef.current.style.height = `${ownerCommentRef.current.scrollHeight}px`;
+  }, [form.comment]);
 
   const openNativePicker = (input: HTMLInputElement | null) => {
     if (!input) {
@@ -3587,11 +4174,12 @@ function OwnerCreateScreen({
       fullName: form.fullName,
       phone: form.phone,
       phoneType: form.phoneType,
-      comment: form.comment,
+      comment: normalizeCommentText(form.comment),
       stageKey: form.stageKey,
       nextAction: form.nextAction,
       nextActionAt,
       agentExperience: form.agentExperience,
+      clientOnlyState: form.clientOnlyState,
       leadsState: form.leadsState,
       showingsState: form.showingsState,
       commissionPercent: form.commissionPercent,
@@ -3622,8 +4210,9 @@ function OwnerCreateScreen({
       nextAction: form.nextAction,
       nextActionAt,
       touchesCount: 0,
-      comment: form.comment.trim(),
+      comment: normalizeCommentText(form.comment),
       agentExperience: form.agentExperience,
+      clientOnlyState: form.clientOnlyState,
       leadsState: form.leadsState,
       showingsState: form.showingsState,
       commissionPercent: form.commissionPercent,
@@ -3672,7 +4261,7 @@ function OwnerCreateScreen({
         diagnostics: false,
         object: false,
       });
-      onCreated(result.stageId, result.card);
+      onCreated(result);
       onClose();
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : "Не удалось сохранить собственника");
@@ -3685,6 +4274,8 @@ function OwnerCreateScreen({
     <FormScreenShell
       title="Новый собственник"
       onClose={handleOwnerClose}
+      headerMode="backOnly"
+      enableSwipeBack
       footer={
         <div className="space-y-3">
           {saveError ? <div className="text-sm text-[#F2A27A]">{saveError}</div> : null}
@@ -3723,7 +4314,16 @@ function OwnerCreateScreen({
           <div className="flex flex-wrap gap-2">
             {ownerPhoneTypeOptions.map((option) => (
               <FormChip key={option} active={form.phoneType === option} onClick={() => setField("phoneType", option)}>
-                {option}
+                <span className="inline-flex items-center gap-2">
+                  {option === "Прямой" ? (
+                    <Phone className="h-4 w-4" />
+                  ) : option === "Подменный" ? (
+                    <PhoneOff className="h-4 w-4" />
+                  ) : (
+                    <Minus className="h-4 w-4" />
+                  )}
+                  <span>{option}</span>
+                </span>
               </FormChip>
             ))}
           </div>
@@ -3818,12 +4418,39 @@ function OwnerCreateScreen({
           ) : null}
         </AnimatePresence>
 
-        <FormField
-          label="Комментарий"
-          value={form.comment}
-          onChange={(value) => setField("comment", value)}
-          placeholder="Короткий комментарий"
-        />
+        <div className="rounded-[24px] border border-white/[0.08] bg-[#10161E] p-4">
+          <div className="mb-3 text-[13px] font-medium text-white/76">Комментарий</div>
+          <textarea
+            ref={ownerCommentRef}
+            value={form.comment}
+            onChange={(event) => setField("comment", event.target.value.replace(/\s*\n+\s*/g, " "))}
+            onKeyDown={(event) => {
+              if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+                event.preventDefault();
+                void handleSave();
+                return;
+              }
+
+              if (event.key === "Enter") {
+                event.preventDefault();
+              }
+            }}
+            rows={1}
+            placeholder="Короткий комментарий"
+            className="min-h-[72px] w-full resize-none overflow-hidden rounded-[18px] border border-white/[0.08] bg-[#121821] px-4 py-3 text-[14px] leading-6 text-white outline-none placeholder:text-white/24 whitespace-pre-wrap break-words [overflow-wrap:anywhere]"
+          />
+        </div>
+
+        {objectInfoRequired ? (
+          <FormField
+            label="Ссылка"
+            value={form.objectLink}
+            onChange={(value) => setField("objectLink", value)}
+            placeholder="https://..."
+            required
+            error={objectFieldErrors.objectLink}
+          />
+        ) : null}
 
         <InlineAccordionSection
           title="Диагностика"
@@ -3840,6 +4467,36 @@ function OwnerCreateScreen({
               ))}
             </div>
           </div>
+
+          <div className="space-y-2">
+            <div className="text-[12px] font-medium text-white/62">Только клиенты</div>
+            <div className="flex flex-wrap gap-2">
+              {ownerClientOnlyOptions.map((option) => (
+                <FormChip key={option} active={form.clientOnlyState === option} onClick={() => setField("clientOnlyState", option)}>
+                  {option}
+                </FormChip>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="text-[12px] font-medium text-white/62">Тип сотрудничества</div>
+            <div className="flex flex-wrap gap-2">
+              {ownerCooperationOptions.map((option) => (
+                <FormChip key={option} active={form.cooperationState === option} onClick={() => setField("cooperationState", option)}>
+                  {option}
+                </FormChip>
+              ))}
+            </div>
+          </div>
+
+          <FormField
+            label="Комиссия"
+            value={form.commissionPercent}
+            onChange={(value) => setField("commissionPercent", normalizeCommissionPercent(value))}
+            placeholder="___"
+            suffix="%"
+          />
 
           <div className="space-y-2">
             <div className="text-[12px] font-medium text-white/62">Отклики</div>
@@ -3862,24 +4519,6 @@ function OwnerCreateScreen({
               ))}
             </div>
           </div>
-
-          <FormField
-            label="Комиссия"
-            value={form.commissionPercent}
-            onChange={(value) => setField("commissionPercent", value.replace(/[^\d.,]/g, ""))}
-            suffix="%"
-          />
-
-          <div className="space-y-2">
-            <div className="text-[12px] font-medium text-white/62">Тип сотрудничества</div>
-            <div className="flex flex-wrap gap-2">
-              {ownerCooperationOptions.map((option) => (
-                <FormChip key={option} active={form.cooperationState === option} onClick={() => setField("cooperationState", option)}>
-                  {option}
-                </FormChip>
-              ))}
-            </div>
-          </div>
         </InlineAccordionSection>
 
         <InlineAccordionSection
@@ -3887,72 +4526,78 @@ function OwnerCreateScreen({
           open={openOwnerSections.object}
           onToggle={() => toggleOwnerSection("object")}
         >
-          <button
-            type="button"
-            onClick={async () => {
-              try {
-                setIsSaving(true);
-                setSaveError("");
-                const result = await persistOwner();
+          {showCreateObjectAction ? (
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  setIsSaving(true);
+                  setSaveError("");
+                  const result = await persistOwner();
 
-                if (!result) {
-                  return;
+                  if (!result) {
+                    return;
+                  }
+
+                  onCreated(result);
+                  onOpenCreateObject(result.ownerOption);
+                } catch (error) {
+                  setSaveError(error instanceof Error ? error.message : "Не удалось открыть создание объекта");
+                } finally {
+                  setIsSaving(false);
                 }
+              }}
+              className="flex w-full items-center justify-between rounded-[18px] border border-white/10 bg-[#141922] px-4 py-3 text-left transition-all hover:border-[#E8C67B]/36"
+            >
+              <div className="space-y-1">
+                <div className="text-[12px] font-medium text-white/52">Объект</div>
+                <div className="text-[14px] font-medium text-white">Добавить объект</div>
+              </div>
+              <div className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-[#E8C67B]">
+                <Plus className="h-4 w-4" />
+              </div>
+            </button>
+          ) : null}
 
-                onCreated(result.stageId, result.card);
-                onOpenCreateObject(result.ownerOption);
-              } catch (error) {
-                setSaveError(error instanceof Error ? error.message : "Не удалось открыть создание объекта");
-              } finally {
-                setIsSaving(false);
-              }
-            }}
-            className="flex w-full items-center justify-between rounded-[18px] border border-white/10 bg-[#141922] px-4 py-3 text-left transition-all hover:border-[#E8C67B]/36"
-          >
-            <div className="space-y-1">
-              <div className="text-[12px] font-medium text-white/52">Объект</div>
-              <div className="text-[14px] font-medium text-white">Добавить объект</div>
-            </div>
-            <div className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-[#E8C67B]">
-              <Plus className="h-4 w-4" />
-            </div>
-          </button>
+          {objectInfoRequired ? (
+            <>
+              <div className="space-y-2">
+                <div className="text-[12px] font-medium text-white/62">Тип сделки</div>
+                <div className="flex flex-wrap gap-2">
+                  {ownerDealTypeOptions.map((option) => (
+                    <FormChip key={option} active={form.dealType === option} onClick={() => setField("dealType", option)}>
+                      {option}
+                    </FormChip>
+                  ))}
+                </div>
+              </div>
 
-          <div className="space-y-2">
-            <div className="text-[12px] font-medium text-white/62">Тип сделки</div>
-            <div className="flex flex-wrap gap-2">
-              {ownerDealTypeOptions.map((option) => (
-                <FormChip key={option} active={form.dealType === option} onClick={() => setField("dealType", option)}>
-                  {option}
-                </FormChip>
-              ))}
-            </div>
-          </div>
-
-          <FormField
-            label="Адрес"
-            value={form.objectAddress}
-            onChange={(value) => setField("objectAddress", value)}
-            placeholder="Город, улица, дом"
-          />
-          <FormField
-            label="ЖК"
-            value={form.objectComplex}
-            onChange={(value) => setField("objectComplex", value)}
-            placeholder="Название ЖК"
-          />
-          <FormField
-            label="Цена"
-            value={form.objectPrice}
-            onChange={(value) => setField("objectPrice", value)}
-            placeholder="Например 250 000"
-          />
-          <FormField
-            label="Ссылка"
-            value={form.objectLink}
-            onChange={(value) => setField("objectLink", value)}
-            placeholder="https://..."
-          />
+              <FormField
+                label="Адрес"
+                value={form.objectAddress}
+                onChange={(value) => setField("objectAddress", value)}
+                placeholder="Город, улица, дом"
+                required
+                error={objectFieldErrors.objectAddress}
+              />
+              <FormField
+                label="ЖК"
+                value={form.objectComplex}
+                onChange={(value) => setField("objectComplex", value)}
+                placeholder="Название ЖК"
+                required
+                error={objectFieldErrors.objectComplex}
+              />
+              <FormField
+                label="Цена"
+                value={form.objectPrice}
+                onChange={(value) => setField("objectPrice", value)}
+                placeholder="Например 250 000"
+                required
+                error={objectFieldErrors.objectPrice}
+              />
+            </>
+          ) : null}
         </InlineAccordionSection>
       </div>
     </FormScreenShell>
@@ -4238,6 +4883,7 @@ function ClientCreateScreen({ onClose, onCreated }: { onClose: () => void; onCre
 function OwnerCardModal({
   card,
   initialCallSheetOpen = false,
+  initialEditMode = false,
   onClose,
   onUpdate,
   onCompleteCall,
@@ -4246,6 +4892,7 @@ function OwnerCardModal({
 }: {
   card: OwnerCrmCard | null;
   initialCallSheetOpen?: boolean;
+  initialEditMode?: boolean;
   onClose: () => void;
   onUpdate: (patch: Partial<OwnerCrmCard>) => void;
   onCompleteCall: (payload: {
@@ -4259,6 +4906,8 @@ function OwnerCardModal({
   onAddObject: () => void;
 }) {
   const [commentDraft, setCommentDraft] = useState(card?.comment ?? "");
+  const [commentEditing, setCommentEditing] = useState(() => !(card?.comment ?? "").trim());
+  const [editMode, setEditMode] = useState(false);
   const [historyExpanded, setHistoryExpanded] = useState(false);
   const [callSheetOpen, setCallSheetOpen] = useState(false);
   const [callResult, setCallResult] = useState<OwnerCallResult>("Не звонил");
@@ -4274,7 +4923,9 @@ function OwnerCardModal({
 
   useEffect(() => {
     setCommentDraft(card?.comment ?? "");
-  }, [card?.id, card?.comment]);
+    setCommentEditing(false);
+    setEditMode(initialEditMode);
+  }, [card?.id, card?.comment, initialEditMode]);
 
   useEffect(() => {
     setHistoryExpanded(false);
@@ -4305,11 +4956,23 @@ function OwnerCardModal({
     commentTextareaRef.current.style.height = "0px";
     const nextHeight = Math.min(Math.max(commentTextareaRef.current.scrollHeight, 72), 180);
     commentTextareaRef.current.style.height = `${nextHeight}px`;
-  }, [commentDraft]);
+  }, [commentDraft, commentEditing]);
+
+  useEffect(() => {
+    if (!commentEditing || !commentTextareaRef.current) {
+      return;
+    }
+
+    commentTextareaRef.current.focus();
+    const nextPosition = commentTextareaRef.current.value.length;
+    commentTextareaRef.current.setSelectionRange(nextPosition, nextPosition);
+  }, [commentEditing]);
 
   if (!card) {
     return null;
   }
+
+  const objectExists = hasOwnerObjectInfo(card);
 
   const openNativePicker = (input: HTMLInputElement | null) => {
     if (!input) {
@@ -4406,20 +5069,22 @@ function OwnerCardModal({
   const callSaveDisabled =
     (showCustomNoAnswerSchedule && (!followUpDate || !followUpTime)) ||
     (showAnsweredSchedule && (!followUpAction || !followUpDate || !followUpTime));
-  const commitComment = () => {
-    if (commentDraft === card.comment) {
+  const persistComment = (nextComment: string) => {
+    const normalizedComment = normalizeCommentText(nextComment);
+
+    if (normalizedComment === card.comment) {
       return;
     }
 
     const now = new Date().toISOString();
     onUpdate({
-      comment: commentDraft,
+      comment: normalizedComment,
       lastContactAt: now,
       history: [
         {
           id: createCardId("history"),
           title: "Комментарий обновлён",
-          meta: commentDraft.trim() ? clampCommentPreview(commentDraft, 72) : "Комментарий очищен",
+          meta: normalizedComment ? clampCommentPreview(normalizedComment, 72) : "Комментарий очищен",
           at: now,
         },
         ...card.history,
@@ -4427,10 +5092,23 @@ function OwnerCardModal({
     });
   };
 
+  const handleCommentSave = () => {
+    persistComment(commentDraft);
+    setCommentEditing(false);
+    commentTextareaRef.current?.blur();
+  };
+
+  const handleCommentDelete = () => {
+    setCommentDraft("");
+    persistComment("");
+    setCommentEditing(false);
+    commentTextareaRef.current?.blur();
+  };
+
   return (
     <>
-      <button type="button" onClick={onClose} className="fixed inset-0 z-40 bg-black/78 backdrop-blur-[8px]" aria-label="Закрыть карточку собственника" />
-      <div className="fixed inset-x-0 bottom-0 z-50 flex justify-center px-4 pb-4">
+      <button type="button" onClick={onClose} className="fixed inset-0 z-[100] bg-black/78 backdrop-blur-[8px]" aria-label="Закрыть карточку собственника" />
+      <div className="fixed inset-x-0 bottom-0 z-[110] flex justify-center px-4 pb-4">
         <motion.div
           initial={{ y: 24, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -4439,7 +5117,32 @@ function OwnerCardModal({
           className="relative isolate w-full max-w-[420px]"
         >
           <div className="relative isolate overflow-hidden rounded-[32px] border border-white/[0.08] bg-[#0B1118] shadow-[0_34px_96px_rgba(0,0,0,0.62),inset_0_1px_0_rgba(255,255,255,0.02)]">
-            <div className="max-h-[84vh] overflow-y-auto px-4 pb-6 pt-5">
+            <div className="max-h-[84vh] overflow-y-auto px-4 pb-32 pt-5">
+              <div className="absolute right-16 top-5 z-20">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditMode((current) => {
+                      const next = !current;
+                      if (!next) {
+                        setCommentEditing(false);
+                        setCommentDraft(card.comment ?? "");
+                        commentTextareaRef.current?.blur();
+                      }
+                      return next;
+                    });
+                  }}
+                  className={[
+                    "flex h-10 w-10 items-center justify-center rounded-full border transition-all",
+                    editMode
+                      ? "border-[#E8C67B]/24 bg-[linear-gradient(180deg,rgba(232,198,123,0.16),rgba(255,255,255,0.03)_100%)] text-[#F7D992]"
+                      : "border-white/[0.08] bg-[#151C25] text-white/72 hover:bg-[#19212C] hover:text-white",
+                  ].join(" ")}
+                  aria-label={editMode ? "Завершить редактирование" : "Редактировать"}
+                >
+                  <Pencil className="h-4.5 w-4.5" />
+                </button>
+              </div>
               <button
                 type="button"
                 onClick={onClose}
@@ -4452,147 +5155,223 @@ function OwnerCardModal({
               <div className="mb-4 flex items-start gap-3 pr-14">
                 <div className="min-w-0">
                   <div className="truncate text-[22px] font-semibold tracking-tight text-white">{card.fullName}</div>
-                  <div className="mt-1 truncate text-[14px] text-white/64">{card.phone}</div>
-                  <div className="mt-2 inline-flex rounded-full border border-white/[0.08] bg-[#151C25] px-2.5 py-1 text-[11px] text-white/72">
-                    {card.phoneType}
+                  <div className="mt-2 flex items-center justify-between gap-3">
+                    <div className="truncate text-[16px] text-white/78">{card.phone}</div>
+                    <PhoneTypeIndicator phoneType={card.phoneType} />
                   </div>
                 </div>
               </div>
 
-              <div className="relative overflow-hidden rounded-[24px] border border-white/[0.08] bg-[#111824] p-4 pb-[72px]">
-                <div className="flex flex-wrap items-center gap-2">
-                  <div className="rounded-full border border-white/[0.08] bg-[#161E28] px-2.5 py-1 text-[11px] font-medium text-white/82">
-                    {card.stageTitle}
+              <div className="mb-4">
+                <div className="w-full rounded-[20px] border border-white/[0.08] bg-[#111824] px-3.5 py-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="rounded-full border border-white/[0.08] bg-[#161E28] px-2.5 py-1 text-[11px] font-medium text-white/82">
+                      {card.stageTitle}
+                    </div>
+                    <div className={["whitespace-nowrap text-[13px] font-medium", overdue ? "text-[#F29B87]" : "text-[#E8C67B]"].join(" ")}>
+                      {formatOwnerActionLine(card)}
+                    </div>
                   </div>
-                  <div className={["text-[13px] font-medium", overdue ? "text-[#F29B87]" : "text-[#E8C67B]"].join(" ")}>
-                    {formatOwnerActionLine(card)}
-                  </div>
-                </div>
-
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-[linear-gradient(180deg,rgba(11,17,24,0),rgba(11,17,24,0.9)_55%,rgba(11,17,24,1))]" />
-                <div className="absolute bottom-4 right-4 z-10 flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setCallSheetOpen(true)}
-                    className="flex h-10 items-center gap-2 rounded-full border border-white/[0.08] bg-[#151D27]/96 px-3.5 text-[13px] font-medium text-white transition-all hover:bg-[#1A2330]"
-                  >
-                    <Phone className="h-4 w-4 text-[#E8C67B]" />
-                    Позвонить
-                  </button>
-                  <button
-                    type="button"
-                    onClick={onOpenListing}
-                    disabled={!card.objectLink.trim()}
-                    className={[
-                      "flex h-10 items-center gap-2 rounded-full border px-3.5 text-[13px] font-medium transition-all",
-                      card.objectLink.trim()
-                        ? "border-white/[0.08] bg-[#151D27]/96 text-white hover:bg-[#1A2330]"
-                        : "cursor-not-allowed border-white/[0.05] bg-[#151D27]/50 text-white/30",
-                    ].join(" ")}
-                  >
-                    <Building2 className={["h-4 w-4", card.objectLink.trim() ? "text-[#E8C67B]" : "text-white/22"].join(" ")} />
-                    Объявление
-                  </button>
                 </div>
               </div>
 
               <div className="mt-4 rounded-[24px] border border-white/[0.08] bg-[#10161E] p-4">
                 <div className="mb-3 text-[13px] font-medium text-white/76">Комментарий</div>
-                <textarea
-                  ref={commentTextareaRef}
-                  value={commentDraft}
-                  onChange={(event) => setCommentDraft(event.target.value)}
-                  onBlur={commitComment}
-                  rows={1}
-                  placeholder="Комментарий по собственнику"
-                  className="min-h-[72px] w-full resize-none overflow-hidden rounded-[18px] border border-white/[0.08] bg-[#121821] px-4 py-3 text-[14px] leading-6 text-white outline-none placeholder:text-white/24"
-                />
+                {editMode && commentEditing ? (
+                  <div className="space-y-3">
+                    <textarea
+                      ref={commentTextareaRef}
+                      value={commentDraft}
+                      onChange={(event) => setCommentDraft(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
+                          event.preventDefault();
+                          handleCommentSave();
+                        }
+                      }}
+                      rows={1}
+                      placeholder="Комментарий по собственнику"
+                      className="min-h-[72px] w-full resize-none overflow-hidden rounded-[18px] border border-white/[0.08] bg-[#121821] px-4 py-3 text-[14px] leading-6 text-white outline-none placeholder:text-white/24 whitespace-pre-wrap break-words [overflow-wrap:anywhere]"
+                    />
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={handleCommentDelete}
+                        className="h-10 rounded-[16px] border border-white/[0.08] bg-[#151D27] px-4 text-[13px] font-medium text-white/76 transition-all hover:bg-[#1A2330] hover:text-white"
+                      >
+                        Удалить
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleCommentSave}
+                        disabled={commentDraft === card.comment}
+                        className="h-10 rounded-[16px] border border-[#E8C67B]/20 bg-[linear-gradient(180deg,rgba(232,198,123,0.16),rgba(255,255,255,0.03)_100%)] px-4 text-[13px] font-medium text-[#F7D992] transition-all hover:bg-[linear-gradient(180deg,rgba(232,198,123,0.2),rgba(255,255,255,0.04)_100%)] disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        Сохранить
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    className={[
+                      "block min-h-[48px] w-full rounded-[18px] px-1 py-1 text-left text-[14px] leading-6 text-white",
+                      editMode ? "cursor-text transition-colors" : "",
+                    ].join(" ")}
+                    onClick={editMode ? () => setCommentEditing(true) : undefined}
+                    role={editMode ? "button" : undefined}
+                    tabIndex={editMode ? 0 : undefined}
+                    onKeyDown={
+                      editMode
+                        ? (event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              setCommentEditing(true);
+                            }
+                          }
+                        : undefined
+                    }
+                  >
+                    <div className={commentDraft.trim() ? "whitespace-pre-wrap break-words" : "text-white/24"}>
+                      {commentDraft.trim() ? commentDraft : "Комментарий по собственнику"}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="mt-4 rounded-[24px] border border-white/[0.08] bg-[#10161E] p-4">
                 <div className="mb-3 text-[13px] font-medium text-white/76">Диагностика</div>
-                <div className="space-y-4">
-                  <div>
-                    <div className="mb-2 text-[12px] font-medium text-white/58">Опыт с агентами</div>
-                    <div className="flex flex-wrap gap-2">
-                      {ownerAgentExperienceOptions.map((option) => (
-                        <FormChip key={option} active={card.agentExperience === option} onClick={() => onUpdate({ agentExperience: option })}>
-                          {option}
-                        </FormChip>
-                      ))}
+                {editMode ? (
+                  <div className="space-y-4">
+                    <div>
+                      <div className="mb-2 text-[12px] font-medium text-white/58">Опыт с агентами</div>
+                      <div className="flex flex-wrap gap-2">
+                        {ownerAgentExperienceOptions.map((option) => (
+                          <FormChip key={option} active={card.agentExperience === option} onClick={() => onUpdate({ agentExperience: option })}>
+                            {option}
+                          </FormChip>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="mb-2 text-[12px] font-medium text-white/58">Только клиенты</div>
+                      <div className="flex flex-wrap gap-2">
+                        {ownerClientOnlyOptions.map((option) => (
+                          <FormChip key={option} active={card.clientOnlyState === option} onClick={() => onUpdate({ clientOnlyState: option })}>
+                            {option}
+                          </FormChip>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="mb-2 text-[12px] font-medium text-white/58">Тип сотрудничества</div>
+                      <div className="flex flex-wrap gap-2">
+                        {ownerCooperationOptions.map((option) => (
+                          <FormChip key={option} active={card.cooperationType === option} onClick={() => onUpdate({ cooperationType: option })}>
+                            {option}
+                          </FormChip>
+                        ))}
+                      </div>
+                    </div>
+
+                    <FormField
+                      label="Комиссия"
+                      value={card.commissionPercent}
+                      onChange={(value) => onUpdate({ commissionPercent: normalizeCommissionPercent(value) })}
+                      placeholder="___"
+                      suffix="%"
+                    />
+
+                    <div>
+                      <div className="mb-2 text-[12px] font-medium text-white/58">Отклики</div>
+                      <div className="flex flex-wrap gap-2">
+                        {ownerLeadsOptions.map((option) => (
+                          <FormChip key={option} active={card.leadsState === option} onClick={() => onUpdate({ leadsState: option })}>
+                            {option}
+                          </FormChip>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="mb-2 text-[12px] font-medium text-white/58">Показы</div>
+                      <div className="flex flex-wrap gap-2">
+                        {ownerShowingOptions.map((option) => (
+                          <FormChip key={option} active={card.showingsState === option} onClick={() => onUpdate({ showingsState: option })}>
+                            {option}
+                          </FormChip>
+                        ))}
+                      </div>
                     </div>
                   </div>
-
-                  <div>
-                    <div className="mb-2 text-[12px] font-medium text-white/58">Отклики</div>
-                    <div className="flex flex-wrap gap-2">
-                      {ownerLeadsOptions.map((option) => (
-                        <FormChip key={option} active={card.leadsState === option} onClick={() => onUpdate({ leadsState: option })}>
-                          {option}
-                        </FormChip>
+                ) : (
+                  <div className="grid gap-3">
+                    {[
+                      ["Опыт с агентами", card.agentExperience],
+                      ["Только клиенты", card.clientOnlyState],
+                      ["Тип сотрудничества", card.cooperationType],
+                      ["Комиссия", card.commissionPercent ? `${card.commissionPercent}%` : ""],
+                      ["Отклики", card.leadsState],
+                      ["Показы", card.showingsState],
+                    ]
+                      .filter(([, value]) => value)
+                      .map(([label, value]) => (
+                        <OwnerInfoRow key={label} label={label} value={value} />
                       ))}
-                    </div>
                   </div>
-
-                  <div>
-                    <div className="mb-2 text-[12px] font-medium text-white/58">Показы</div>
-                    <div className="flex flex-wrap gap-2">
-                      {ownerShowingOptions.map((option) => (
-                        <FormChip key={option} active={card.showingsState === option} onClick={() => onUpdate({ showingsState: option })}>
-                          {option}
-                        </FormChip>
-                      ))}
-                    </div>
-                  </div>
-
-                  <FormField
-                    label="Комиссия"
-                    value={card.commissionPercent}
-                    onChange={(value) => onUpdate({ commissionPercent: value.replace(/[^\d.,]/g, "") })}
-                    suffix="%"
-                  />
-
-                  <div>
-                    <div className="mb-2 text-[12px] font-medium text-white/58">Тип сотрудничества</div>
-                    <div className="flex flex-wrap gap-2">
-                      {ownerCooperationOptions.map((option) => (
-                        <FormChip key={option} active={card.cooperationType === option} onClick={() => onUpdate({ cooperationType: option })}>
-                          {option}
-                        </FormChip>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+                )}
               </div>
 
               <div className="mt-4 rounded-[24px] border border-white/[0.08] bg-[#10161E] p-4">
                 <div className="mb-3 text-[13px] font-medium text-white/76">Информация по объекту</div>
-                <div className="space-y-4">
-                  <div>
-                    <div className="mb-2 text-[12px] font-medium text-white/58">Тип сделки</div>
-                    <div className="flex flex-wrap gap-2">
-                      {ownerDealTypeOptions.map((option) => (
-                        <FormChip key={option} active={card.dealType === option} onClick={() => onUpdate({ dealType: option })}>
-                          {option}
-                        </FormChip>
-                      ))}
+                {editMode ? (
+                  <div className="space-y-4">
+                    <div>
+                      <div className="mb-2 text-[12px] font-medium text-white/58">Тип сделки</div>
+                      <div className="flex flex-wrap gap-2">
+                        {ownerDealTypeOptions.map((option) => (
+                          <FormChip key={option} active={card.dealType === option} onClick={() => onUpdate({ dealType: option })}>
+                            {option}
+                          </FormChip>
+                        ))}
+                      </div>
                     </div>
+
+                    <FormField label="Адрес" value={card.objectAddress} onChange={(value) => onUpdate({ objectAddress: value })} placeholder="Город, улица, дом" />
+                    <FormField label="ЖК" value={card.objectComplex} onChange={(value) => onUpdate({ objectComplex: value })} placeholder="Название ЖК" />
+                    <FormField label="Цена" value={card.objectPrice} onChange={(value) => onUpdate({ objectPrice: value })} placeholder="Например 250 000 ₽" />
+                    <FormField label="Ссылка" value={card.objectLink} onChange={(value) => onUpdate({ objectLink: value })} placeholder="https://..." />
+
+                    <Button
+                      type="button"
+                      onClick={onAddObject}
+                      className="h-11 w-full rounded-[18px] border border-white/[0.08] bg-[#151D27] text-white hover:bg-[#1A2330]"
+                    >
+                      <Plus className="h-4 w-4" />
+                      {objectExists ? "Добавить ещё объект" : "Добавить объект"}
+                    </Button>
                   </div>
+                ) : (
+                  <div className="space-y-3">
+                    {objectExists ? (
+                      <OwnerObjectPreviewCard card={card} />
+                    ) : (
+                      <div className="rounded-[18px] border border-dashed border-white/10 px-3 py-4 text-[12px] text-white/36">
+                        Объект пока не добавлен
+                      </div>
+                    )}
 
-                  <FormField label="Адрес" value={card.objectAddress} onChange={(value) => onUpdate({ objectAddress: value })} placeholder="Город, улица, дом" />
-                  <FormField label="ЖК" value={card.objectComplex} onChange={(value) => onUpdate({ objectComplex: value })} placeholder="Название ЖК" />
-                  <FormField label="Цена" value={card.objectPrice} onChange={(value) => onUpdate({ objectPrice: value })} placeholder="Например 250 000 ₽" />
-                  <FormField label="Ссылка" value={card.objectLink} onChange={(value) => onUpdate({ objectLink: value })} placeholder="https://..." />
-
-                  <Button
-                    type="button"
-                    onClick={onAddObject}
-                    className="h-11 w-full rounded-[18px] border border-white/[0.08] bg-[#151D27] text-white hover:bg-[#1A2330]"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Добавить объект
-                  </Button>
-                </div>
+                    <Button
+                      type="button"
+                      onClick={onAddObject}
+                      className="h-11 w-full rounded-[18px] border border-white/[0.08] bg-[#151D27] text-white hover:bg-[#1A2330]"
+                    >
+                      <Plus className="h-4 w-4" />
+                      {objectExists ? "Добавить ещё объект" : "Добавить объект"}
+                    </Button>
+                  </div>
+                )}
               </div>
 
               <div className="mt-4 rounded-[24px] border border-white/[0.08] bg-[#10161E] p-4">
@@ -4645,6 +5424,37 @@ function OwnerCardModal({
                 </div>
               </div>
             </div>
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-40 bg-[linear-gradient(180deg,rgba(11,17,24,0)_0%,rgba(11,17,24,0.2)_30%,rgba(11,17,24,0.62)_72%,rgba(11,17,24,1)_100%)]" />
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex justify-center px-4 pb-4">
+              <div className="pointer-events-auto w-full max-w-[320px] rounded-[28px] bg-[#101720]/88 px-2 py-2 shadow-[0_18px_48px_rgba(0,0,0,0.42)] backdrop-blur-xl">
+                <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setCallSheetOpen(true)}
+                  className="flex h-14 w-full items-center justify-center gap-2 rounded-[22px] bg-[#151D27]/96 px-4 text-white transition-all hover:bg-[#1A2330]"
+                  aria-label="Позвонить"
+                >
+                  <Phone className="h-5 w-5 text-[#E8C67B]" />
+                  <span className="text-[14px] font-medium text-white/86">Позвонить</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={onOpenListing}
+                  disabled={!card.objectLink.trim()}
+                  className={[
+                    "flex h-14 w-full items-center justify-center gap-2 rounded-[22px] px-4 transition-all",
+                    card.objectLink.trim()
+                      ? "bg-[#151D27]/96 text-white hover:bg-[#1A2330]"
+                      : "cursor-not-allowed bg-[#151D27]/50 text-white/30",
+                  ].join(" ")}
+                  aria-label="Открыть ссылку"
+                >
+                  <Globe className={["h-5 w-5", card.objectLink.trim() ? "text-[#E8C67B]" : "text-white/22"].join(" ")} />
+                  <span className={card.objectLink.trim() ? "text-[14px] font-medium text-white/86" : "text-[14px] font-medium text-white/30"}>Ссылка</span>
+                </button>
+                </div>
+              </div>
+            </div>
           </div>
         </motion.div>
 
@@ -4654,7 +5464,7 @@ function OwnerCardModal({
               <button
                 type="button"
                 onClick={resetCallSheetState}
-                className="fixed inset-0 z-[60] bg-black/10"
+                className="fixed inset-0 z-[120] bg-black/10"
                 aria-label="Закрыть плашку завершения звонка"
               />
               <motion.div
@@ -4662,7 +5472,7 @@ function OwnerCardModal({
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: 24, opacity: 0 }}
                 transition={{ duration: 0.18, ease: "easeOut" }}
-                className="fixed inset-x-0 bottom-0 z-[70] flex justify-center px-4 pb-4"
+                className="fixed inset-x-0 bottom-0 z-[130] flex justify-center px-4 pb-4"
               >
                 <div className="w-full max-w-[420px] rounded-[28px] border border-white/[0.08] bg-[#0E141C] p-4 shadow-[0_32px_72px_rgba(0,0,0,0.48)]">
                   <div className="mb-4 flex items-start justify-between gap-3">
@@ -4877,22 +5687,29 @@ function OwnerCardModal({
 function FunnelScreen({
   createRequest,
   onRequestCloseSearch,
+  onCreateScreenChange,
 }: {
   createRequest: number;
   onRequestCloseSearch: () => void;
+  onCreateScreenChange?: (open: boolean) => void;
 }) {
   const [selectedFunnel, setSelectedFunnel] = usePersistentState("litelux-crm-selected-funnel", "collection");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedStage, setSelectedStage] = usePersistentState("litelux-crm-selected-stage", "no-answer");
   const [createSheetOpen, setCreateSheetOpen] = useState(false);
-  const [activeCreateScreen, setActiveCreateScreen] = useState<CreateEntityType | null>(null);
+  const [activeCreateScreen, setActiveCreateScreen] = useState<CreateScreen | null>(null);
   const [extraCards, setExtraCards] = usePersistentState<Record<string, CrmCard[]>>("litelux-crm-extra-cards", {});
   const [ownerCardDrafts, setOwnerCardDrafts] = usePersistentState<Record<string, Partial<OwnerCrmCard>>>("litelux-crm-owner-card-drafts", {});
   const [archivedCardKeys, setArchivedCardKeys] = usePersistentState<string[]>("litelux-crm-archived-cards", []);
   const [persistedOwners, setPersistedOwners] = useState<PropertyOwnerOption[]>([]);
   const [selectedOwnerCardId, setSelectedOwnerCardId] = useState<string | null>(null);
+  const [selectedPropertyCardKey, setSelectedPropertyCardKey] = useState<string | null>(null);
   const [callIntentOwnerCardId, setCallIntentOwnerCardId] = useState<string | null>(null);
+  const [editIntentOwnerCardId, setEditIntentOwnerCardId] = useState<string | null>(null);
   const [propertyOwnerDraft, setPropertyOwnerDraft] = useState<PropertyOwnerOption | null>(null);
+  const [propertyCreateScenario, setPropertyCreateScenario] = useState<PropertyCreateScenario | null>(null);
+  const [propertyFormDraft, setPropertyFormDraft] = useState<PropertyFormState | null>(null);
+  const [createReturnScreen, setCreateReturnScreen] = useState<CreateScreen | null>(null);
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const touchStartX = useRef<number | null>(null);
 
@@ -4950,6 +5767,15 @@ function FunnelScreen({
 
     return activeCard && isOwnerCrmCard(activeCard) ? activeCard : null;
   }, [activeStageCards, selectedOwnerCardId]);
+
+  const selectedPropertyCard = useMemo(() => {
+    if (!selectedPropertyCardKey) {
+      return null;
+    }
+
+    const match = activeStageCards.find(({ card, cardKey }) => !isOwnerCrmCard(card) && cardKey === selectedPropertyCardKey);
+    return match?.card ?? null;
+  }, [activeStageCards, selectedPropertyCardKey]);
 
   const ownerOptions = useMemo<PropertyOwnerOption[]>(() => {
     const baseOwnerCards = funnelCatalog
@@ -5048,6 +5874,10 @@ function FunnelScreen({
   }, [createRequest]);
 
   useEffect(() => {
+    onCreateScreenChange?.(activeCreateScreen !== null);
+  }, [activeCreateScreen, onCreateScreenChange]);
+
+  useEffect(() => {
     if (drawerOpen) {
       setCreateSheetOpen(false);
     }
@@ -5118,13 +5948,31 @@ function FunnelScreen({
   };
 
   const openOwnerCard = (cardId: string) => {
+    setSelectedPropertyCardKey(null);
     setCallIntentOwnerCardId(null);
+    setEditIntentOwnerCardId(null);
     setSelectedOwnerCardId(cardId);
   };
 
   const openOwnerCardForCall = (cardId: string) => {
+    setSelectedPropertyCardKey(null);
     setCallIntentOwnerCardId(cardId);
+    setEditIntentOwnerCardId(null);
     setSelectedOwnerCardId(cardId);
+  };
+
+  const openOwnerCardForEdit = (cardId: string) => {
+    setSelectedPropertyCardKey(null);
+    setCallIntentOwnerCardId(null);
+    setEditIntentOwnerCardId(cardId);
+    setSelectedOwnerCardId(cardId);
+  };
+
+  const openPropertyCard = (cardKey: string) => {
+    setSelectedOwnerCardId(null);
+    setCallIntentOwnerCardId(null);
+    setEditIntentOwnerCardId(null);
+    setSelectedPropertyCardKey(cardKey);
   };
 
   const handleOwnerOpenListingByCard = (card: OwnerCrmCard) => {
@@ -5190,18 +6038,56 @@ function FunnelScreen({
     window.open(normalizedLink, "_blank", "noopener,noreferrer");
   };
 
+  if (activeCreateScreen === "property-scenario") {
+    return (
+      <PropertyScenarioScreen
+        onClose={() => {
+          setActiveCreateScreen(null);
+          setPropertyCreateScenario(null);
+          setPropertyFormDraft(null);
+          setPropertyOwnerDraft(null);
+          setCreateReturnScreen(null);
+        }}
+        onSelect={(scenario) => {
+          setPropertyCreateScenario(scenario);
+          setCreateReturnScreen("property-scenario");
+          setActiveCreateScreen("property");
+        }}
+      />
+    );
+  }
+
   if (activeCreateScreen === "property") {
     return (
       <PropertyCreateScreen
+        scenario={propertyCreateScenario}
+        initialDraft={propertyFormDraft}
         linkedOwner={propertyOwnerDraft}
         ownerOptions={ownerOptions}
+        onDraftChange={setPropertyFormDraft}
+        onAddOwner={() => {
+          setCreateReturnScreen("property");
+          setActiveCreateScreen("owner");
+        }}
         onClose={() => {
+          if (createReturnScreen === "property-scenario") {
+            setActiveCreateScreen("property-scenario");
+            return;
+          }
+
           setActiveCreateScreen(null);
+          setPropertyCreateScenario(null);
           setPropertyOwnerDraft(null);
+          setPropertyFormDraft(null);
+          setCreateReturnScreen(null);
         }}
         onCreated={(result) => {
           appendCard("rent", "published", result.card);
+          setActiveCreateScreen(null);
+          setPropertyCreateScenario(null);
           setPropertyOwnerDraft(null);
+          setPropertyFormDraft(null);
+          setCreateReturnScreen(null);
         }}
       />
     );
@@ -5210,10 +6096,31 @@ function FunnelScreen({
   if (activeCreateScreen === "owner") {
     return (
       <OwnerCreateScreen
-        onClose={() => setActiveCreateScreen(null)}
-        onCreated={(stageId, card) => appendCard("collection", stageId, card)}
+        onClose={() => {
+          if (createReturnScreen === "property") {
+            setActiveCreateScreen("property");
+            return;
+          }
+
+          setActiveCreateScreen(null);
+          setCreateReturnScreen(null);
+        }}
+        onCreated={({ stageId, card, ownerOption }) => {
+          appendCard("collection", stageId, card);
+
+          if (createReturnScreen === "property") {
+            setPropertyOwnerDraft(ownerOption);
+            setActiveCreateScreen("property");
+            return;
+          }
+
+          setCreateReturnScreen(null);
+        }}
         onOpenCreateObject={(owner) => {
           setPropertyOwnerDraft(owner);
+          setPropertyCreateScenario({ dealType: "rent", segment: "residential" });
+          setPropertyFormDraft(null);
+          setCreateReturnScreen(null);
           setActiveCreateScreen("property");
         }}
       />
@@ -5360,13 +6267,15 @@ function FunnelScreen({
               })}
             </div>
 
-            <div className="relative overflow-hidden" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+            <div className="relative" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
               <div className="flex h-full w-full flex-col gap-3">
                 {activeStageCards.map(({ card, cardKey }) => (
                   <div key={cardKey} className="w-full">
                     <StageCard
                       card={card}
                       onOpen={isOwnerCrmCard(card) ? () => openOwnerCard(card.id ?? "") : undefined}
+                      onEdit={isOwnerCrmCard(card) ? () => openOwnerCardForEdit(card.id ?? "") : undefined}
+                      onView={!isOwnerCrmCard(card) ? () => openPropertyCard(cardKey) : undefined}
                       onCall={isOwnerCrmCard(card) ? () => openOwnerCardForCall(card.id ?? "") : undefined}
                       onOpenListing={isOwnerCrmCard(card) ? () => handleOwnerOpenListingByCard(card) : undefined}
                       onArchive={() =>
@@ -5404,7 +6313,13 @@ function FunnelScreen({
                       whileTap={{ scale: 0.985, y: 1 }}
                       onClick={() => {
                         setCreateSheetOpen(false);
-                        setActiveCreateScreen(option.id);
+                        if (option.id === "property") {
+                          setPropertyFormDraft(null);
+                          setPropertyOwnerDraft(null);
+                          setPropertyCreateScenario(null);
+                        }
+                        setCreateReturnScreen(null);
+                        setActiveCreateScreen(option.id === "property" ? "property-scenario" : option.id);
                       }}
                       className="flex w-[210px] items-center rounded-full border border-white/10 bg-[#141923]/94 px-3 py-2 text-left text-white shadow-[0_14px_30px_rgba(0,0,0,0.26)] backdrop-blur-[18px]"
                     >
@@ -5425,8 +6340,10 @@ function FunnelScreen({
             <OwnerCardModal
               card={selectedOwnerCard}
               initialCallSheetOpen={callIntentOwnerCardId === selectedOwnerCard.id}
+              initialEditMode={editIntentOwnerCardId === selectedOwnerCard.id}
               onClose={() => {
                 setCallIntentOwnerCardId(null);
+                setEditIntentOwnerCardId(null);
                 setSelectedOwnerCardId(null);
               }}
               onUpdate={(patch) => {
@@ -5447,8 +6364,22 @@ function FunnelScreen({
                     phoneType: selectedOwnerCard.phoneType,
                   });
                 }
+                setPropertyCreateScenario({ dealType: "rent", segment: "residential" });
+                setPropertyFormDraft(null);
+                setCreateReturnScreen(null);
                 setSelectedOwnerCardId(null);
                 setActiveCreateScreen("property");
+              }}
+            />
+          ) : null}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {selectedPropertyCard ? (
+            <PropertyCardModal
+              card={selectedPropertyCard}
+              onClose={() => {
+                setSelectedPropertyCardKey(null);
               }}
             />
           ) : null}
@@ -5578,6 +6509,7 @@ export default function PadluxCrmFrontend() {
   const [active, setActive] = usePersistentState("litelux-crm-active-screen", "crm");
   const [searchOpen, setSearchOpen] = useState(false);
   const [crmCreateRequest, setCrmCreateRequest] = useState(0);
+  const [crmCreateScreenOpen, setCrmCreateScreenOpen] = useState(false);
 
   const handleNavChange = (id: string) => {
     if (id === "crm" && active === "crm") {
@@ -5586,6 +6518,7 @@ export default function PadluxCrmFrontend() {
     }
 
     setSearchOpen(false);
+    setCrmCreateScreenOpen(false);
     setActive(id);
   };
 
@@ -5606,7 +6539,13 @@ export default function PadluxCrmFrontend() {
       case "profile":
         return <ProfileScreen />;
       default:
-        return <FunnelScreen createRequest={crmCreateRequest} onRequestCloseSearch={() => setSearchOpen(false)} />;
+        return (
+          <FunnelScreen
+            createRequest={crmCreateRequest}
+            onRequestCloseSearch={() => setSearchOpen(false)}
+            onCreateScreenChange={setCrmCreateScreenOpen}
+          />
+        );
     }
   }, [active, crmCreateRequest]);
 
@@ -5615,8 +6554,8 @@ export default function PadluxCrmFrontend() {
       <AmbientGlow className="left-[4%] top-0 h-56 w-56 bg-[#F2CC7A]/10" />
       <AmbientGlow className="right-[8%] top-28 h-44 w-44 bg-white/6" />
       <div className="relative mx-auto max-w-[420px]">{screen}</div>
-      <SearchSheet open={searchOpen} onClose={() => setSearchOpen(false)} />
-      <BottomBar active={active} onChange={handleNavChange} searchOpen={searchOpen} />
+      {!crmCreateScreenOpen ? <SearchSheet open={searchOpen} onClose={() => setSearchOpen(false)} /> : null}
+      {!crmCreateScreenOpen ? <BottomBar active={active} onChange={handleNavChange} searchOpen={searchOpen} /> : null}
     </div>
   );
 }

@@ -232,6 +232,9 @@ alter table if exists crm.residential_rent_objects
   add column if not exists utilities_mode text;
 
 alter table if exists crm.residential_rent_objects
+  add column if not exists meter_mode text;
+
+alter table if exists crm.residential_rent_objects
   add column if not exists utilities_comment text;
 
 alter table if exists crm.residential_rent_objects
